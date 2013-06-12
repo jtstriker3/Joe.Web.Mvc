@@ -15,6 +15,7 @@ using Joe.Business.Report;
 using DoddleReport;
 using System.Reflection;
 using System.ComponentModel.DataAnnotations;
+using Joe.Business;
 
 namespace Joe.Web.Mvc.Utility.Extensions
 {
