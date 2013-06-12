@@ -1,4 +1,4 @@
 Joe.Web.Mvc
 ===========
 
-MVC Base Controllers that add Default CRUD methods to any Controller
+MVC Base Controllers that utilize Joe.Business to add Default CRUD methods to any Controller
