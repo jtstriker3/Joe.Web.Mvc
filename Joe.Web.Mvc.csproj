@@ -11,9 +11,9 @@
     <ProjectTypeGuids>{E3E379DF-F4C6-4180-9B81-6769533ABE47};{349c5851-65df-11da-9384-00065b846f21};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Teradata.Web.Mvc</RootNamespace>
-    <AssemblyName>Teradata.Web.Mvc</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <RootNamespace>Joe.Web.Mvc</RootNamespace>
+    <AssemblyName>Joe.Web.Mvc</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <MvcBuildViews>false</MvcBuildViews>
     <UseIISExpress>false</UseIISExpress>
     <IISExpressSSLPort />
@@ -44,8 +44,9 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CacheControl">
-      <HintPath>packages\Joe.Business.1.0.1\lib\net40\CacheControl.dll</HintPath>
+    <Reference Include="CacheControl, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>packages\Joe.Business.1.0.2.3\lib\net40\CacheControl.dll</HintPath>
     </Reference>
     <Reference Include="DoddleReport">
       <HintPath>..\..\..\Sites\WendelPoultryAdmin\trunk\packages\DoddleReport.iTextSharp.1.4\lib\net40\DoddleReport.dll</HintPath>
@@ -63,8 +64,12 @@
     <Reference Include="itextsharp">
       <HintPath>..\..\..\Sites\WendelPoultryAdmin\trunk\packages\DoddleReport.iTextSharp.1.4\lib\net40\itextsharp.dll</HintPath>
     </Reference>
-    <Reference Include="Joe.Business">
-      <HintPath>packages\Joe.Business.1.0.1\lib\net40\Joe.Business.dll</HintPath>
+    <Reference Include="Joe.Business, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>packages\Joe.Business.1.0.2.3\lib\net40\Joe.Business.dll</HintPath>
+    </Reference>
+    <Reference Include="Joe.Init">
+      <HintPath>packages\Joe.Init.1.0.0.2\lib\net40\Joe.Init.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Map">
       <HintPath>packages\Joe.Map.1.0.1\lib\net40\Joe.Map.dll</HintPath>
@@ -75,8 +80,9 @@
     <Reference Include="Joe.Reflection">
       <HintPath>packages\Joe.Reflection.1.0.2\lib\net40\Joe.Reflection.dll</HintPath>
     </Reference>
-    <Reference Include="Joe.Security">
-      <HintPath>packages\Joe.Security.1.0.0\lib\net40\Joe.Security.dll</HintPath>
+    <Reference Include="Joe.Security, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>packages\Joe.Security.1.0.1.1\lib\net40\Joe.Security.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Data.OData, Version=5.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">

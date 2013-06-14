@@ -5,9 +5,11 @@ using System.Text;
 using System.Web.Http.Filters;
 using System.Web.Http.Controllers;
 using System.Web.Http;
+using Joe.Initialize;
 
 namespace Joe.Web.Mvc
 {
+    [Init(Function = "Register")]
     public class CustomFilterProvider : IFilterProvider
     {
         public IEnumerable<FilterInfo> GetFilters(HttpConfiguration configuration, HttpActionDescriptor actionDescriptor)
