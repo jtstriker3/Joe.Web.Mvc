@@ -55,7 +55,7 @@ namespace Joe.Web.Mvc
                 var where = this.HttpContext.Request.QueryString["where"];
                 if (where.NotNull())
                     ienumerableResult = ienumerableResult.Filter(where);
-                if (!isNotHtml && report.Filters.Count() == 0)
+                if (!isNotHtml && (!report.Filters.NotNull() || report.Filters.Count() == 0))
                     doddleReport.TextFields.Header = "&nbsp;";
                 doddleReport.Source = ienumerableResult.ToReportSource();
             }
