@@ -93,8 +93,9 @@ namespace Joe.Web.Mvc
                                         foreach (var viewModel in elements)
                                             ((IBusinessController)controller).BaseBusinessObject.SetCrud(viewModel, true);
 
-                                        elements = elements.Where(viewModel => ((Boolean)ReflectionHelper.GetEvalProperty(viewModel, "CanRead")));
+                                        elements = elements.Where(viewModel => ((Boolean)ReflectionHelper.GetEvalProperty(viewModel, "CanRead"))).AsQueryable();
                                     }
+
                                     actionExecutedContext.Response = actionExecutedContext.Request.CreateResponse(HttpStatusCode.OK, viewModelList);
                                 }
                                 else
@@ -167,7 +168,6 @@ namespace Joe.Web.Mvc
                                 {
                                     foreach (var viewModel in viewModelList)
                                         ((IBusinessController)controller).BaseBusinessObject.MapBOFunction(viewModel);
-
                                     actionExecutedContext.Response = actionExecutedContext.Request.CreateResponse(HttpStatusCode.OK, viewModelList);
                                 }
 

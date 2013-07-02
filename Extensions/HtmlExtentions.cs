@@ -395,5 +395,37 @@ namespace Joe.Web.Mvc.Utility.Extensions
             //}
         }
 
+        #region GridListView
+
+        public static MvcHtmlString GridListView<TModel, TValue>(this HtmlHelper<TModel> html, Expression<Func<TModel, TValue>> expression, int columns = 4, Object rowAttributes = null)
+        where TValue : IEnumerable
+        {
+            return GridListView(html, expression, columns, new RouteValueDictionary(rowAttributes));
+        }
+
+        public static MvcHtmlString GridListView<TModel, TValue>(this HtmlHelper<TModel> html, Expression<Func<TModel, TValue>> expression, int columns, IDictionary<String, Object> rowAttributes)
+            where TValue : IEnumerable
+        {
+            var count = 0;
+            ICollection<TagBuilder> rows = new List<TagBuilder>();
+            TagBuilder row = null;
+            foreach (var item in expression.Compile().Invoke(html.ViewData.Model))
+            {
+                if (count % columns == 0)
+                {
+                    row = new TagBuilder("div");
+                    row.MergeAttributes(rowAttributes);
+                    rows.Add(row);
+                }
+                row.InnerHtml += html.DisplayFor(model => item).ToString();
+                count++;
+            }
+            String grid = String.Empty;
+            rows.ForEach(r => grid += r.ToString());
+            return new MvcHtmlString(grid);
+        }
+
+        #endregion
+
     }
 }

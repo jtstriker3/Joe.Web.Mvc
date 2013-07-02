@@ -8,6 +8,8 @@ using Joe.Business;
 using Joe.Web.Mvc;
 using Joe.Web.Mvc.Utility.Configuration;
 using Joe.Web.Mvc.Utility.Extensions;
+using System.ComponentModel.DataAnnotations;
+using System.Data.Entity.Validation;
 
 namespace Joe.Web.Mvc
 {
@@ -73,22 +75,40 @@ namespace Joe.Web.Mvc
 
         protected virtual ActionResult GetErrorResponse(Exception ex, MvcOptionsAttribute options, Object viewModel)
         {
-            LogError(ex);
-            if (ConfigurationHelper.Debug)
-                throw ex;
+            if (ex is ValidationException || ex is DbUnexpectedValidationException)
+            {
+
+                var validationEx = ex as ValidationException;
+                this.ModelState.AddModelError(String.Empty, ex);
+            }
+            else if (ex is DbEntityValidationException)
+            {
+                var exception = ex as DbEntityValidationException;
+                foreach (var error in exception.EntityValidationErrors.SelectMany(ev => ev.ValidationErrors.Select(ve => ve.ErrorMessage)))
+                {
+                    this.ModelState.AddModelError(String.Empty, error);
+                }
+            }
             else
             {
-                ViewBag.Error = true;
-                Response.StatusCode = 500;
-                ViewBag.ErrorText = this.GetErrorMessage(ex, options);
+                LogError(ex);
+                if (ConfigurationHelper.Debug)
+                    throw ex;
+                else
+                {
+                    ViewBag.Error = true;
+                    Response.StatusCode = 500;
+                    ViewBag.ErrorText = this.GetErrorMessage(ex, options);
+                }
+
+                if (options.ReturnErrorViewOnError)
+                {
+                    Session["ErrorText"] = ViewBag.ErrorText;
+                    return Redirect(ConfigurationHelper.DefaultErrorpage);
+                }
             }
-            if (options.ReturnErrorViewOnError)
-            {
-                Session["ErrorText"] = ViewBag.ErrorText;
-                return Transfer(ConfigurationHelper.DefaultErrorpage);
-            }
-            else
-                return (ActionResult)this.View(viewModel);
+
+            return (ActionResult)this.View(viewModel);
 
         }
 
@@ -133,6 +153,7 @@ namespace Joe.Web.Mvc
             ViewBag.ErrorText = BuildErrorList();
             ViewBag.Error = true;
             Response.StatusCode = 422;
+            this.BaseBusinessObject.MapBOFunction(viewModel, false);
             return Request.IsAjaxRequest() ? Json(new { errors = BuildErrorList() }, JsonRequestBehavior.AllowGet) : (ActionResult)this.View(viewModel);
         }
 
@@ -141,6 +162,7 @@ namespace Joe.Web.Mvc
             ViewBag.ErrorText = BuildErrorList();
             ViewBag.Error = true;
             Response.StatusCode = 422;
+            this.BaseBusinessObject.MapBOFunction(viewModel, true);
             return Request.IsAjaxRequest() ? Json(new { errors = BuildErrorList() }, JsonRequestBehavior.AllowGet) : (ActionResult)this.View(viewModel);
         }
 

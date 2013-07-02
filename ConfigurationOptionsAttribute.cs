@@ -20,12 +20,15 @@ namespace Joe.Web.Mvc
         public Boolean PassIDOnCreateRedirect { get; set; }
         public String RedirectOnDelete { get; set; }
         public Boolean ReturnErrorViewOnError { get; set; }
+        public int DefaultPageSize { get; set; }
+        public IEnumerable<String> FilterProperties { get; set; }
 
-        public MvcOptionsAttribute()
+        public MvcOptionsAttribute(params String[] filterProperties)
         {
             PassIDOnCreateRedirect = true;
             ReturnErrorViewOnError = true;
-
+            DefaultPageSize = 10;
+            FilterProperties = filterProperties;
         }
     }
 }

@@ -43,7 +43,24 @@ namespace Joe.Web.Mvc
             return this.Index(null);
         }
 
-        protected virtual ActionResult Index(Expression<Func<TViewModel, Boolean>> filter)
+        [HttpPost]
+        public virtual ActionResult Index(String filter)
+        {
+            string filterString = null;
+            if (!String.IsNullOrWhiteSpace(filter))
+            {
+                foreach (var filterProp in Options.FilterProperties)
+                {
+                    if (!filterString.NotNull())
+                        filterString = filterProp + ":Contains:" + filter;
+                    else
+                        filterString += ":or:" + filterProp + ":Contains:" + filter;
+                }
+            }
+            return Index(null, filterString: filterString);
+        }
+
+        protected virtual ActionResult Index(Expression<Func<TViewModel, Boolean>> filter, Object dynamicFilters = null, String filterString = null)
         {
             try
             {
@@ -54,15 +71,15 @@ namespace Joe.Web.Mvc
                     int? take, skip;
                     string orderBy, where;
                     Boolean descending = false;
-                    take = Request.QueryString["take"].ToNullable<int>();
-                    skip = Request.QueryString["skip"].ToNullable<int>();
+                    take = filterString.NotNull() ? null : Request.QueryString["take"].ToNullable<int>();
+                    skip = filterString.NotNull() ? null : Request.QueryString["skip"].ToNullable<int>();
                     orderBy = Convert.ToString(Request.QueryString["orderby"]);
                     descending = Convert.ToBoolean(Request.QueryString["descending"]);
-                    where = Convert.ToString(Request.QueryString["where"]);
+                    where = filterString ?? Convert.ToString(Request.QueryString["where"]);
                     int count;
-                    var viewModelList = this.BusinessObject.Get(out count, filter, take, skip, descending: descending, orderBy: orderBy, stringFilter: where);
+                    var viewModelList = this.BusinessObject.Get(out count, filter, take.HasValue ? take : Options.DefaultPageSize, skip, descending: descending, orderBy: orderBy, stringFilter: where, dynamicFilter: dynamicFilters);
                     ViewBag.Count = count;
-                    ViewBag.Take = take.HasValue ? take.Value : 10;
+                    ViewBag.Take = take.HasValue ? take.Value : Options.DefaultPageSize;
                     ViewBag.Skip = skip.HasValue ? skip.Value : 0;
                     ViewBag.OrderBy = orderBy;
                     ViewBag.Descending = descending;
