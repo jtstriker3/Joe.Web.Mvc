@@ -98,6 +98,7 @@ namespace Joe.Web.Mvc
         public virtual ActionResult Details(String id)
         {
             TViewModel viewModel = null;
+            id = this.Decode(id).Single();
             try
             {
                 viewModel = this.BusinessObject.Get(id);
@@ -138,7 +139,7 @@ namespace Joe.Web.Mvc
             try
             {
                 var viewModel = new TViewModel();
-                viewModel.SetIDs(ids);
+                viewModel.SetIDs(this.Decode(ids));
                 return this.Request.IsAjaxRequest() ?
                         PartialView("Create", viewModel) : (ActionResult)this.View("Create", viewModel);
             }
@@ -148,7 +149,7 @@ namespace Joe.Web.Mvc
             }
         }
 
-        [HttpPost, ValidateInput(false)]
+        [HttpPost, ValidateInput(true)]
         public virtual ActionResult Create([Bind(Exclude = "ID")]TViewModel viewModel)
         {
             try
@@ -165,7 +166,7 @@ namespace Joe.Web.Mvc
             }
             catch (Exception ex)
             {
-                return Error(ex, Options);
+                return Error(ex, Options, viewModel);
             }
         }
 
@@ -173,9 +174,10 @@ namespace Joe.Web.Mvc
         {
             try
             {
-                var viewModel = this.BusinessObject.Get(id);
+                var decodedId = this.Decode(id).Single();
+                var viewModel = this.BusinessObject.Get(decodedId);
                 if (ViewModelRetrieved != null)
-                    ViewModelRetrieved(viewModel, id);
+                    ViewModelRetrieved(viewModel, decodedId);
 
                 if (Request.QueryString["Success"] == "True")
                     ViewBag.Success = true;
@@ -187,7 +189,7 @@ namespace Joe.Web.Mvc
             }
         }
 
-        [HttpPost, ValidateInput(false)]
+        [HttpPost, ValidateInput(true)]
         public virtual ActionResult Edit(TViewModel viewModel)
         {
             try
@@ -206,7 +208,7 @@ namespace Joe.Web.Mvc
             }
             catch (Exception ex)
             {
-                return Error(ex, Options);
+                return Error(ex, Options, viewModel);
             }
         }
 
@@ -214,7 +216,7 @@ namespace Joe.Web.Mvc
         {
             try
             {
-                var viewModel = this.BusinessObject.Get(id);
+                var viewModel = this.BusinessObject.Get(id.Decode());
                 return this.Delete(viewModel);
             }
             catch (Exception ex)
@@ -234,7 +236,7 @@ namespace Joe.Web.Mvc
             }
             catch (Exception ex)
             {
-                return Error(ex, Options);
+                return Error(ex, Options, viewModel);
             }
         }
 
@@ -252,11 +254,17 @@ namespace Joe.Web.Mvc
             {
                 if (count < viewModel.GetIDs().Count())
                     route += "/";
-                route += id;
+                route += Options.URLEncodeKey ? id.ToString().Encode() : id;
                 count++;
             }
 
             return route;
+        }
+
+        protected virtual IEnumerable<String> Decode(params object[] ids)
+        {
+            foreach (var id in ids)
+                yield return Options.URLEncodeKey ? id.ToString().Decode() : id.ToString();
         }
 
         protected virtual ActionResult CreateResult(TViewModel viewModel)

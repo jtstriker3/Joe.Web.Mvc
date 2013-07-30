@@ -79,7 +79,7 @@ namespace Joe.Web.Mvc
             {
 
                 var validationEx = ex as ValidationException;
-                this.ModelState.AddModelError(String.Empty, ex);
+                this.ModelState.AddModelError(String.Empty, ex.Message);
             }
             else if (ex is DbEntityValidationException)
             {
@@ -107,6 +107,9 @@ namespace Joe.Web.Mvc
                     return Redirect(ConfigurationHelper.DefaultErrorpage);
                 }
             }
+
+            if (viewModel.NotNull())
+                this.BaseBusinessObject.MapBOFunction(viewModel);
 
             return (ActionResult)this.View(viewModel);
 
@@ -179,9 +182,9 @@ namespace Joe.Web.Mvc
             }
         }
 
-        protected ActionResult Error(Exception ex, MvcOptionsAttribute options = null)
+        protected ActionResult Error(Exception ex, MvcOptionsAttribute options = null, Object viewModel = null)
         {
-            return Request.IsAjaxRequest() ? GetAjaxErrorResponse(ex, options) : GetErrorResponse(ex, options);
+            return Request.IsAjaxRequest() ? GetAjaxErrorResponse(ex, options, viewModel) : GetErrorResponse(ex, options, viewModel);
         }
 
         protected JsonResult AjaxAction(AjaxActionData ajaxAction)

@@ -21,6 +21,14 @@ namespace Joe.Web.Mvc.Utility.Extensions
 {
     public static class HelperExtentions
     {
+        private const String _starGuid = "5503d559602048bf8f36245ec2c52692";
+        private const String _lessThanGuid = "2819f0618ea542488a4a7e1696a7879f";
+        private const String _greaterThanGuid = "4e678dd22d1b453db7e22a87774899a4";
+        private const String _percentGuid = "261389ab7ddc43a69d30747307ac6d82";
+        private const String _andGuid = "6e9a7e295d414e9c8e566f002074fe84";
+        private const String _colonGuid = "186bbe935ab0438bbb01e9dd28dc1de9";
+        private const String _backSlashGuid = "4f5e9d3e15f843cab093947ba518a7a5";
+
         public static Boolean NotNull(this Object obj)
         {
             return obj != null;
@@ -217,6 +225,36 @@ namespace Joe.Web.Mvc.Utility.Extensions
         {
             foreach (var item in list)
                 action(item);
+        }
+
+        public static String Encode(this String stringToEncode)
+        {
+            stringToEncode = stringToEncode.Replace("*", _starGuid);
+            stringToEncode = stringToEncode.Replace("<", _lessThanGuid);
+            stringToEncode = stringToEncode.Replace(">", _greaterThanGuid);
+            stringToEncode = stringToEncode.Replace("%", _percentGuid);
+            stringToEncode = stringToEncode.Replace("&", _andGuid);
+            stringToEncode = stringToEncode.Replace(":", _colonGuid);
+            stringToEncode = stringToEncode.Replace("\\", _backSlashGuid);
+            return HttpUtility.UrlEncode(stringToEncode);
+        }
+
+        public static IEnumerable<String> Decode(this IEnumerable<Object> listOfObjectsToDecode)
+        {
+            foreach (var decodeString in listOfObjectsToDecode)
+                yield return decodeString.ToString().Decode();
+        }
+
+        public static String Decode(this String stringToDecode)
+        {
+            HttpUtility.UrlDecode(stringToDecode);
+            stringToDecode = stringToDecode.Replace(_starGuid, "*");
+            stringToDecode = stringToDecode.Replace(_lessThanGuid, "<");
+            stringToDecode = stringToDecode.Replace(_greaterThanGuid, ">");
+            stringToDecode = stringToDecode.Replace(_percentGuid, "%");
+            stringToDecode = stringToDecode.Replace(_andGuid, "&");
+            stringToDecode = stringToDecode.Replace(_colonGuid, ":");
+            return stringToDecode.Replace(_backSlashGuid, "\\");
         }
     }
 }

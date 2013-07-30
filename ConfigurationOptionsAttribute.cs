@@ -22,6 +22,7 @@ namespace Joe.Web.Mvc
         public Boolean ReturnErrorViewOnError { get; set; }
         public int DefaultPageSize { get; set; }
         public IEnumerable<String> FilterProperties { get; set; }
+        public Boolean URLEncodeKey { get; set; }
 
         public MvcOptionsAttribute(params String[] filterProperties)
         {
@@ -29,6 +30,7 @@ namespace Joe.Web.Mvc
             ReturnErrorViewOnError = true;
             DefaultPageSize = 10;
             FilterProperties = filterProperties;
+            URLEncodeKey = true;
         }
     }
 }
