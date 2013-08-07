@@ -256,5 +256,13 @@ namespace Joe.Web.Mvc.Utility.Extensions
             stringToDecode = stringToDecode.Replace(_colonGuid, ":");
             return stringToDecode.Replace(_backSlashGuid, "\\");
         }
+
+        public static IQueryable TryCast(this IEnumerable list, Type type)
+        {
+            if (type != null && list.GetType().IsGenericType)
+                return ((IEnumerable)Expression.Lambda(Expression.Call(typeof(Enumerable), "Cast", new[] { type }, Expression.Constant(list))).Compile().DynamicInvoke()).AsQueryable();
+
+            return list.AsQueryable();
+        }
     }
 }

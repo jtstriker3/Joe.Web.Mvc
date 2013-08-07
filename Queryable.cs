@@ -15,6 +15,7 @@ using System.Text.RegularExpressions;
 using System.Web.Http;
 using Joe.Web.Mvc.Utility.Extensions;
 using Joe.Web.Mvc.Utility.Configuration;
+using Joe.Map;
 
 
 namespace Joe.Web.Mvc
@@ -35,7 +36,7 @@ namespace Joe.Web.Mvc
 
                 if (actionExecutedContext.Response.IsSuccessStatusCode)
                 {
-                    
+
                     IQueryable iquery = ((ObjectContent)actionExecutedContext.Response.Content).Value as IQueryable;
                     //This is super dirty but lets you hit the database before applying odata filters. This is to get around
                     //Terdata.Net Provider Issues.
@@ -127,6 +128,14 @@ namespace Joe.Web.Mvc
             }
         }
 
+        private Boolean _hasWhere
+        {
+            get
+            {
+                return !String.IsNullOrWhiteSpace(_where);
+            }
+        }
+
         public Boolean HasGroupBy
         {
             get { return !String.IsNullOrEmpty(_groupby); }
@@ -170,6 +179,14 @@ namespace Joe.Web.Mvc
             get
             {
                 return new ODataFilter(_filter, _parameterExpression, _genericType);
+            }
+        }
+
+        private String _where
+        {
+            get
+            {
+                return _query["where"];
             }
         }
 
@@ -482,15 +499,19 @@ namespace Joe.Web.Mvc
 
         private Expression BuildFilterExpression()
         {
+            Expression ex = null;
             if (!String.IsNullOrEmpty(_filter))
             {
                 Expression filterEx = Expression.Lambda(_odataFilter.BuildExpression(), new ParameterExpression[] { _parameterExpression });
-                return Expression.Call(typeof(Queryable), "Where", new[] { _queryType }, Expression.Constant(_iquery), filterEx);
+                ex = Expression.Call(typeof(Queryable), "Where", new[] { _queryType }, Expression.Constant(_iquery), filterEx);
             }
+            if (this._hasWhere)
+                ex = Expression.Call(typeof(FilterExtensions), "Filter", new[] { _queryType }, ex, Expression.Constant(_where), Expression.Constant(null, typeof(Object)));
+
+            if (ex.NotNull())
+                return ex;
             else
-            {
                 return Expression.Constant(_iquery);
-            }
         }
 
         private Expression BuildGroupByExpression(Expression ex)

@@ -20,7 +20,7 @@ namespace Joe.Web.Mvc
         where TRepository : class, IDBViewContext, new()
     {
 
-        public BaseManyToManyApiController(IBusinessObject<TModel, TViewModel, TRepository> businessObject)
+        public BaseManyToManyApiController(IRepository<TModel, TViewModel, TRepository> businessObject)
             : base(businessObject)
         {
         }
@@ -43,7 +43,7 @@ namespace Joe.Web.Mvc
 
         public virtual TViewModel Get(String id1, String id2)
         {
-            var viewModel = this.BusinessObject.Get(id1, id2);
+            var viewModel = this.Repository.Get(id1, id2);
             if (this.ViewModelRetrieved != null)
                 ViewModelRetrieved(viewModel, id1, id2);
             return viewModel;
@@ -51,13 +51,13 @@ namespace Joe.Web.Mvc
 
         public virtual void Delete(String id, String id2, String id3)
         {
-            var viewModel = this.BusinessObject.Get(id, id2, id3);
+            var viewModel = this.Repository.Get(id, id2, id3);
             this.Delete(viewModel);
         }
 
         public virtual void Delete(String id, String id2)
         {
-            var viewModel = this.BusinessObject.Get(id, id2);
+            var viewModel = this.Repository.Get(id, id2);
             this.Delete(viewModel);
         }
 

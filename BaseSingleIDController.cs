@@ -19,14 +19,14 @@ namespace Joe.Web.Mvc
         where TRepository : class, IDBViewContext, new()
     {
         protected MvcOptionsAttribute Options { get; set; }
-        public IBusinessObject<TModel, TViewModel, TRepository> BusinessObject { get; set; }
+        public IRepository<TModel, TViewModel, TRepository> Repository { get; set; }
         public delegate TViewModel GetDelegate(TViewModel viewModel, params String[] ids);
         public delegate IQueryable<TViewModel> GetListDelegate(IQueryable<TViewModel> viewModelList);
         public GetDelegate ViewModelRetrieved;
         public GetListDelegate ViewModelListRetrived;
 
 
-        public BaseSingleIDController(IBusinessObject<TModel, TViewModel, TRepository> businessObject)
+        public BaseSingleIDController(IRepository<TModel, TViewModel, TRepository> businessObject)
             : base(businessObject)
         {
             Options = (MvcOptionsAttribute)GetType().GetCustomAttributes(typeof(MvcOptionsAttribute), true).SingleOrDefault() ?? new MvcOptionsAttribute();
@@ -35,7 +35,7 @@ namespace Joe.Web.Mvc
             ViewBag.ShowSubMenu = Options.ShowSubMenu;
             ViewBag.ShowCreate = Options.ShowCreate;
 
-            BusinessObject = businessObject;
+            Repository = businessObject;
         }
 
         public virtual ActionResult Index()
@@ -77,7 +77,7 @@ namespace Joe.Web.Mvc
                     descending = Convert.ToBoolean(Request.QueryString["descending"]);
                     where = filterString ?? Convert.ToString(Request.QueryString["where"]);
                     int count;
-                    var viewModelList = this.BusinessObject.Get(out count, filter, take.HasValue ? take : Options.DefaultPageSize, skip, descending: descending, orderBy: orderBy, stringFilter: where, dynamicFilter: dynamicFilters);
+                    var viewModelList = this.Repository.Get(out count, filter, take.HasValue ? take : Options.DefaultPageSize, skip, descending: descending, orderBy: orderBy, stringFilter: where, dynamicFilter: dynamicFilters);
                     ViewBag.Count = count;
                     ViewBag.Take = take.HasValue ? take.Value : Options.DefaultPageSize;
                     ViewBag.Skip = skip.HasValue ? skip.Value : 0;
@@ -101,7 +101,7 @@ namespace Joe.Web.Mvc
             id = this.Decode(id).Single();
             try
             {
-                viewModel = this.BusinessObject.Get(id);
+                viewModel = this.Repository.Get(id);
             }
             catch (Exception ex)
             {
@@ -127,19 +127,19 @@ namespace Joe.Web.Mvc
                         Joe.Reflection.ReflectionHelper.SetEvalProperty(viewModel, propList[i], propList[i + 1]);
                     }
                 }
-                this.BusinessObject.MapBOFunction(viewModel, false);
+                this.Repository.MapRepoFunction(viewModel, false);
 
             }
             return Request.IsAjaxRequest() ? PartialView(viewModel) : (ActionResult)this.View(viewModel);
         }
 
         [ActionName("CreateWithID")]
-        public virtual ActionResult Create(params object[] ids)
+        public virtual ActionResult Create(string id)
         {
             try
             {
                 var viewModel = new TViewModel();
-                viewModel.SetIDs(this.Decode(ids));
+                viewModel.SetIDs(this.Decode(id.Split('/')));
                 return this.Request.IsAjaxRequest() ?
                         PartialView("Create", viewModel) : (ActionResult)this.View("Create", viewModel);
             }
@@ -156,7 +156,7 @@ namespace Joe.Web.Mvc
             {
                 if (this.ModelState.IsValid)
                 {
-                    viewModel = this.BusinessObject.Create(viewModel);
+                    viewModel = this.Repository.Create(viewModel);
                     return CreateResult(viewModel);
                 }
                 else
@@ -174,10 +174,10 @@ namespace Joe.Web.Mvc
         {
             try
             {
-                var decodedId = this.Decode(id).Single();
-                var viewModel = this.BusinessObject.Get(decodedId);
+                var decodedIds = this.Decode(id).Single().Split('/');
+                var viewModel = this.Repository.Get(decodedIds);
                 if (ViewModelRetrieved != null)
-                    ViewModelRetrieved(viewModel, decodedId);
+                    ViewModelRetrieved(viewModel, decodedIds);
 
                 if (Request.QueryString["Success"] == "True")
                     ViewBag.Success = true;
@@ -197,7 +197,7 @@ namespace Joe.Web.Mvc
 
                 if (this.ModelState.IsValid)
                 {
-                    viewModel = this.BusinessObject.Update(viewModel);
+                    viewModel = this.Repository.Update(viewModel);
                     ViewBag.Success = true;
                     return EditResult(viewModel);
                 }
@@ -216,7 +216,7 @@ namespace Joe.Web.Mvc
         {
             try
             {
-                var viewModel = this.BusinessObject.Get(id.Decode());
+                var viewModel = this.Repository.Get(id.Decode().Split('/'));
                 return this.Delete(viewModel);
             }
             catch (Exception ex)
@@ -230,7 +230,7 @@ namespace Joe.Web.Mvc
         {
             try
             {
-                this.BusinessObject.Delete(viewModel);
+                this.Repository.Delete(viewModel);
                 return DeleteResult(viewModel);
 
             }
@@ -243,7 +243,7 @@ namespace Joe.Web.Mvc
         protected override void OnResultExecuted(ResultExecutedContext filterContext)
         {
             base.OnResultExecuted(filterContext);
-            this.BusinessObject.Dispose();
+            this.Repository.Dispose();
         }
 
         protected virtual String BuildIDRoute(TViewModel viewModel)
@@ -284,7 +284,7 @@ namespace Joe.Web.Mvc
 
         protected virtual TViewModel InitCreateModel()
         {
-            return this.BusinessObject.Default();
+            return this.Repository.Default();
         }
 
     }

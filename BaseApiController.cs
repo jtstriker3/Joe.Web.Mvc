@@ -18,22 +18,22 @@ namespace Joe.Web.Mvc
         where TViewModel : class, new()
         where TRepository : class, IDBViewContext, new()
     {
-        protected IBusinessObject<TModel, TViewModel, TRepository> BusinessObject { get; set; }
+        protected IRepository<TModel, TViewModel, TRepository> Repository { get; set; }
         public delegate TViewModel GetDelegate(TViewModel viewModel, params String[] ids);
         public delegate IQueryable<TViewModel> GetListDelegate(IQueryable<TViewModel> viewModelList);
         public GetDelegate ViewModelRetrieved;
         public GetListDelegate ViewModelListRetrieved;
-        public IBusinessObject BaseBusinessObject { get { return this.BusinessObject; } }
+        public IRepository BaseRepository { get { return this.Repository; } }
 
-        public BaseApiController(IBusinessObject<TModel, TViewModel, TRepository> businessObject)
+        public BaseApiController(IRepository<TModel, TViewModel, TRepository> businessObject)
         {
-            BusinessObject = businessObject;
+            Repository = businessObject;
         }
 
-        [JoeQueryable, SetCrud, MapBOFunctions]
+        [JoeQueryable, SetCrud, MapRepoFunctions]
         public virtual IQueryable<TViewModel> Get()
         {
-            var viewModelList = this.BusinessObject.Get(setCrudOverride: false, mapBOFunctionsOverride: false);
+            var viewModelList = this.Repository.Get(setCrudOverride: false, mapRepoFunctionsOverride: false);
             if (ViewModelListRetrieved != null)
                 viewModelList = ViewModelListRetrieved(viewModelList);
 
@@ -42,7 +42,7 @@ namespace Joe.Web.Mvc
 
         public virtual TViewModel Get(String id)
         {
-            var viewModel = this.BusinessObject.Get(id);
+            var viewModel = this.Repository.Get(id);
             if (this.ViewModelRetrieved != null)
                 ViewModelRetrieved(viewModel, id);
             return viewModel;
@@ -50,24 +50,24 @@ namespace Joe.Web.Mvc
 
         public IQueryable<TViewModel> Put(List<TViewModel> viewModelList, Boolean List)
         {
-            return this.BusinessObject.Update(viewModelList);
+            return this.Repository.Update(viewModelList);
         }
 
         [ValidActionFilter]
         public virtual TViewModel Put(TViewModel viewModel)
         {
-            return this.BusinessObject.Update(viewModel);
+            return this.Repository.Update(viewModel);
         }
 
         [ValidActionFilter]
         public virtual TViewModel Post(TViewModel viewModel)
         {
-            return this.BusinessObject.Create(viewModel);
+            return this.Repository.Create(viewModel);
         }
 
         public virtual void Delete(string id)
         {
-            var viewModel = this.BusinessObject.Get(id);
+            var viewModel = this.Repository.Get(id);
             this.Delete(viewModel);
         }
 
@@ -76,7 +76,7 @@ namespace Joe.Web.Mvc
         {
             try
             {
-                this.BusinessObject.Delete(viewModel);
+                this.Repository.Delete(viewModel);
             }
             catch (Exception ex)
             {
@@ -86,7 +86,7 @@ namespace Joe.Web.Mvc
 
         protected override void Dispose(bool disposing)
         {
-            this.BusinessObject.Dispose();
+            this.Repository.Dispose();
             base.Dispose(disposing);
         }
 

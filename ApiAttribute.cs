@@ -14,7 +14,7 @@ namespace Joe.Web.Mvc
     public class ApiAttribute : Attribute
     {
         public Boolean SetCrud { get; set; }
-        public Boolean MapBOFunctions { get; set; }
+        public Boolean MapRepoFunctions { get; set; }
 
         public ApiAttribute()
         {
@@ -73,6 +73,9 @@ namespace Joe.Web.Mvc
                 {
                     var controller = actionExecutedContext.ActionContext.ControllerContext.Controller;
                     var value = ((ObjectContent)actionExecutedContext.Response.Content).Value;
+                    Type genericType = null;
+                    if (value.GetType().IsGenericType)
+                        genericType = value.GetType().GetGenericArguments().Single();
                     var SetCrud = ((ApiAttribute)controller.GetType().GetCustomAttributes(typeof(ApiAttribute), true).SingleOrDefault() ?? new ApiAttribute()).SetCrud;
                     IEnumerable<String> totalCountList;
                     String count = null;
@@ -84,6 +87,13 @@ namespace Joe.Web.Mvc
                         {
                             if (typeof(IEnumerable).IsAssignableFrom(value.GetType()))
                             {
+                                Func<Object, Boolean> filter = viewModel =>
+                                        {
+                                            var propertyInfo = ReflectionHelper.TryGetEvalPropertyInfo(viewModel.GetType(), "CanRead");
+                                            if (propertyInfo.NotNull())
+                                                return ((Boolean)ReflectionHelper.GetEvalProperty(viewModel, "CanRead"));
+                                            return true;
+                                        };
                                 var viewModelList = ((IEnumerable)value).Cast<Object>().ToList();
                                 if (viewModelList.GetType().IsGenericType && value.GetType().GetGenericArguments().Count() > 1 && typeof(Grouping<,>).IsAssignableFrom(value.GetType().GetGenericArguments()[1].GetGenericTypeDefinition()))
                                 {
@@ -91,19 +101,19 @@ namespace Joe.Web.Mvc
                                     {
                                         var elements = ((IEnumerable)ReflectionHelper.GetEvalProperty(group, "Elements")).Cast<Object>();
                                         foreach (var viewModel in elements)
-                                            ((IBusinessController)controller).BaseBusinessObject.SetCrud(viewModel, true);
+                                            ((IBusinessController)controller).BaseRepository.SetCrud(viewModel, true);
 
-                                        elements = elements.Where(viewModel => ((Boolean)ReflectionHelper.GetEvalProperty(viewModel, "CanRead"))).AsQueryable();
+                                        elements = elements.Where(filter).AsQueryable();
                                     }
 
-                                    actionExecutedContext.Response = actionExecutedContext.Request.CreateResponse(HttpStatusCode.OK, viewModelList);
+                                    actionExecutedContext.Response = actionExecutedContext.Request.CreateResponse(HttpStatusCode.OK, viewModelList.TryCast(genericType));
                                 }
                                 else
                                 {
                                     foreach (var viewModel in viewModelList)
-                                        ((IBusinessController)controller).BaseBusinessObject.SetCrud(viewModel, true);
+                                        ((IBusinessController)controller).BaseRepository.SetCrud(viewModel, true);
 
-                                    actionExecutedContext.Response = actionExecutedContext.Request.CreateResponse(HttpStatusCode.OK, viewModelList.Where(viewModel => ((Boolean)ReflectionHelper.GetEvalProperty(viewModel, "CanRead"))));
+                                    ((ObjectContent)actionExecutedContext.Response.Content).Value = viewModelList.Where(filter).TryCast(genericType);
                                 }
 
                                 actionExecutedContext.Response.Headers.Add("X-Total-Count", count);
@@ -112,7 +122,7 @@ namespace Joe.Web.Mvc
                                 throw new Exception("Content value must be IEnumerable");
                         }
                         else
-                            throw new Exception("SetCrud must apply to Controller that implements from Teradata.Web.Mvc.IBusinessController");
+                            throw new Exception("SetCrud must apply to Controller that implements from Joe.Web.Mvc.IBusinessController");
                     }
                 }
             }
@@ -125,11 +135,11 @@ namespace Joe.Web.Mvc
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
-    public class MapBOFunctions : System.Web.Http.Filters.ActionFilterAttribute, IOrderedFilter
+    public class MapRepoFunctions : System.Web.Http.Filters.ActionFilterAttribute, IOrderedFilter
     {
         public int Order { get; private set; }
 
-        public MapBOFunctions()
+        public MapRepoFunctions()
         {
             Order = int.MaxValue - 1;
         }
@@ -142,12 +152,15 @@ namespace Joe.Web.Mvc
                 {
                     var controller = actionExecutedContext.ActionContext.ControllerContext.Controller;
                     var value = ((ObjectContent)actionExecutedContext.Response.Content).Value;
-                    var mapBOFuntions = ((ApiAttribute)controller.GetType().GetCustomAttributes(typeof(ApiAttribute), true).SingleOrDefault() ?? new ApiAttribute()).MapBOFunctions;
+                    Type genericType = null;
+                    if (value.GetType().IsGenericType)
+                        genericType = value.GetType().GetGenericArguments().Single();
+                    var mapRepoFuntions = ((ApiAttribute)controller.GetType().GetCustomAttributes(typeof(ApiAttribute), true).SingleOrDefault() ?? new ApiAttribute()).MapRepoFunctions;
                     IEnumerable<String> totalCountList;
                     String count = null;
                     if (actionExecutedContext.Response.Headers.TryGetValues("X-Total-Count", out totalCountList))
                         count = totalCountList.FirstOrDefault();
-                    if (mapBOFuntions)
+                    if (mapRepoFuntions)
                     {
                         if (typeof(IBusinessController).IsAssignableFrom(controller.GetType()))
                         {
@@ -160,15 +173,15 @@ namespace Joe.Web.Mvc
                                     {
                                         var elements = ((IEnumerable)ReflectionHelper.GetEvalProperty(group, "Elements")).Cast<Object>();
                                         foreach (var viewModel in elements)
-                                            ((IBusinessController)controller).BaseBusinessObject.MapBOFunction(viewModel);
+                                            ((IBusinessController)controller).BaseRepository.MapRepoFunction(viewModel);
                                     }
-                                    actionExecutedContext.Response = actionExecutedContext.Request.CreateResponse(HttpStatusCode.OK, viewModelList);
+                                    actionExecutedContext.Response = actionExecutedContext.Request.CreateResponse(HttpStatusCode.OK, viewModelList.TryCast(genericType));
                                 }
                                 else
                                 {
                                     foreach (var viewModel in viewModelList)
-                                        ((IBusinessController)controller).BaseBusinessObject.MapBOFunction(viewModel);
-                                    actionExecutedContext.Response = actionExecutedContext.Request.CreateResponse(HttpStatusCode.OK, viewModelList);
+                                        ((IBusinessController)controller).BaseRepository.MapRepoFunction(viewModel);
+                                    ((ObjectContent)actionExecutedContext.Response.Content).Value = viewModelList.TryCast(genericType);
                                 }
 
                                 actionExecutedContext.Response.Headers.Add("X-Total-Count", count);
@@ -177,7 +190,7 @@ namespace Joe.Web.Mvc
                                 throw new Exception("Content value must be IEnumerable");
                         }
                         else
-                            throw new Exception("MapBOFunctions must apply to Controller that implements from Teradata.Web.Mvc.IBusinessController");
+                            throw new Exception("MapRepoFunctions must apply to Controller that implements from Joe.Web.Mvc.IBusinessController");
                     }
                 }
             }

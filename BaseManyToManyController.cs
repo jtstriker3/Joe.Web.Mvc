@@ -22,7 +22,7 @@ namespace Joe.Web.Mvc
         where TRelationModel2 : class, new()
         where TRepository : class, IDBViewContext, new()
     {
-        public BaseManyToManyController(IBusinessObject<TModel, TViewModel, TRepository> businessObject)
+        public BaseManyToManyController(IRepository<TModel, TViewModel, TRepository> businessObject)
             : base(businessObject)
         {
         }
@@ -38,7 +38,7 @@ namespace Joe.Web.Mvc
             try
             {
                 Utility.Session.SessionHelper.ManyToManyFocus = "1";
-                var relationView = Joe.Business.BusinessObject<TRelationModel1, TRelationView1, TRepository>.QuickGet(id);
+                var relationView = Joe.Business.Repository<TRelationModel1, TRelationView1, TRepository>.QuickGet(id);
 
                 var intID = Convert.ToInt32(id);
                 ViewBag.FocusName = (String)relationView.GetType().GetProperty("Name").GetValue(relationView, null);
@@ -46,7 +46,7 @@ namespace Joe.Web.Mvc
                     return Request.IsAjaxRequest() ? this.PartialView("Index", new List<TViewModel>()) : (ActionResult)this.View("Index", new List<TViewModel>());
                 else
                 {
-                    var viewModelList = this.BusinessObject.Get().Where(v => v.ID1 == intID);
+                    var viewModelList = this.Repository.Get().Where(v => v.ID1 == intID);
                     if (ViewModelListRetrived != null)
                         viewModelList = ViewModelListRetrived(viewModelList);
                     return Request.IsAjaxRequest() ? this.PartialView("Index", viewModelList) : (ActionResult)this.View("Index", viewModelList);
@@ -62,7 +62,7 @@ namespace Joe.Web.Mvc
         {
             try
             {
-                var relationView = Joe.Business.BusinessObject<TRelationModel2, TRelationView2, TRepository>.QuickGet(id);
+                var relationView = Joe.Business.Repository<TRelationModel2, TRelationView2, TRepository>.QuickGet(id);
                 Utility.Session.SessionHelper.ManyToManyFocus = "2";
                 var intID = Convert.ToInt32(id);
                 ViewBag.FocusName = (String)relationView.GetType().GetProperty("Name").GetValue(relationView, null);
@@ -71,7 +71,7 @@ namespace Joe.Web.Mvc
                     return Request.IsAjaxRequest() ? this.PartialView("Index", new List<TViewModel>()) : (ActionResult)this.View("Index", new List<TViewModel>());
                 else
                 {
-                    var viewModelList = this.BusinessObject.Get().Where(v => v.ID2 == intID);
+                    var viewModelList = this.Repository.Get().Where(v => v.ID2 == intID);
                     if (ViewModelListRetrived != null)
                         viewModelList = ViewModelListRetrived(viewModelList);
                     return Request.IsAjaxRequest() ? this.PartialView("Index", viewModelList) : (ActionResult)this.View("Index", viewModelList);
@@ -95,7 +95,7 @@ namespace Joe.Web.Mvc
                     if (SessionHelper.ManyToManyFocus == "1")
                     {
 
-                        var relationView = Joe.Business.BusinessObject<TRelationModel1, TRelationView1, TRepository>.QuickGet(id);
+                        var relationView = Joe.Business.Repository<TRelationModel1, TRelationView1, TRepository>.QuickGet(id);
 
                         String relationName = (String)relationView.GetType().GetProperty("Name").GetValue(relationView, null);
                         viewModel.ID1 = (int)Convert.ChangeType(id, viewModel.ID1.GetType());
@@ -103,7 +103,7 @@ namespace Joe.Web.Mvc
                     }
                     else
                     {
-                        var relationView = Joe.Business.BusinessObject<TRelationModel2, TRelationView2, TRepository>.QuickGet(id);
+                        var relationView = Joe.Business.Repository<TRelationModel2, TRelationView2, TRepository>.QuickGet(id);
 
                         String relationName = (String)relationView.GetType().GetProperty("Name").GetValue(relationView, null);
                         viewModel.ID2 = (int)Convert.ChangeType(id, viewModel.ID1.GetType());
@@ -135,7 +135,7 @@ namespace Joe.Web.Mvc
             try
             {
                 SessionHelper.ManyToManyFocus = Request.QueryString["indexBy"] ?? SessionHelper.ManyToManyFocus;
-                var viewModel = this.BusinessObject.Get(id, id2);
+                var viewModel = this.Repository.Get(id, id2);
                 if (ViewModelRetrieved != null)
                     ViewModelRetrieved(viewModel, id, id2);
                 return Request.IsAjaxRequest() ? PartialView(viewModel) : (ActionResult)this.View(viewModel);
@@ -153,7 +153,7 @@ namespace Joe.Web.Mvc
             {
                 SessionHelper.ManyToManyFocus = Request.QueryString["indexBy"] ?? SessionHelper.ManyToManyFocus;
 
-                var viewModel = this.BusinessObject.Get(id, id2, id3);
+                var viewModel = this.Repository.Get(id, id2, id3);
                 if (ViewModelRetrieved != null)
                     ViewModelRetrieved(viewModel, id, id2, id3);
                 return Request.IsAjaxRequest() ? PartialView("Edit", viewModel) : (ActionResult)this.View("Edit", viewModel);
@@ -172,7 +172,7 @@ namespace Joe.Web.Mvc
 
         public virtual ActionResult Delete(String id, String id2)
         {
-            var viewModel = this.BusinessObject.Get(id, id2);
+            var viewModel = this.Repository.Get(id, id2);
             return this.Delete(viewModel);
         }
 

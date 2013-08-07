@@ -8,6 +8,6 @@ namespace Joe.Web.Mvc
 {
     interface IBusinessController
     {
-        IBusinessObject BaseBusinessObject { get; }
+        IRepository BaseRepository { get; }
     }
 }

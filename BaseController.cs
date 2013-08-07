@@ -17,11 +17,11 @@ namespace Joe.Web.Mvc
     {
         public static IErrorLogProvider ErrorLogger { get; set; }
 
-        public IBusinessObject BaseBusinessObject { get; set; }
+        public IRepository BaseRepository { get; set; }
 
-        public BaseController(IBusinessObject baseBusinessObject)
+        public BaseController(IRepository baseRepository)
         {
-            BaseBusinessObject = baseBusinessObject;
+            BaseRepository = baseRepository;
             ViewBag.Success = false;
             ViewBag.Error = false;
             ViewBag.Header = String.Empty;
@@ -109,7 +109,7 @@ namespace Joe.Web.Mvc
             }
 
             if (viewModel.NotNull())
-                this.BaseBusinessObject.MapBOFunction(viewModel);
+                this.BaseRepository.MapRepoFunction(viewModel);
 
             return (ActionResult)this.View(viewModel);
 
@@ -156,7 +156,7 @@ namespace Joe.Web.Mvc
             ViewBag.ErrorText = BuildErrorList();
             ViewBag.Error = true;
             Response.StatusCode = 422;
-            this.BaseBusinessObject.MapBOFunction(viewModel, false);
+            this.BaseRepository.MapRepoFunction(viewModel, false);
             return Request.IsAjaxRequest() ? Json(new { errors = BuildErrorList() }, JsonRequestBehavior.AllowGet) : (ActionResult)this.View(viewModel);
         }
 
@@ -165,7 +165,7 @@ namespace Joe.Web.Mvc
             ViewBag.ErrorText = BuildErrorList();
             ViewBag.Error = true;
             Response.StatusCode = 422;
-            this.BaseBusinessObject.MapBOFunction(viewModel, true);
+            this.BaseRepository.MapRepoFunction(viewModel, true);
             return Request.IsAjaxRequest() ? Json(new { errors = BuildErrorList() }, JsonRequestBehavior.AllowGet) : (ActionResult)this.View(viewModel);
         }
 

@@ -19,30 +19,30 @@ namespace Joe.Web.Mvc
 
         public ActionResult Index()
         {
-            ReportRepository reportBO = new ReportRepository();
-            return this.Request.IsAjaxRequest() ? PartialView(reportBO.GetReports()) : (ActionResult)View(reportBO.GetReports());
+            ReportRepository reportRepo = new ReportRepository();
+            return this.Request.IsAjaxRequest() ? PartialView(reportRepo.GetReports()) : (ActionResult)View(reportRepo.GetReports());
         }
 
         public ActionResult Filters(String id)
         {
-            IReportRepository reportBO = new ReportRepository();
-            var report = reportBO.GetReport(id);
+            IReportRepository reportRepo = new ReportRepository();
+            var report = reportRepo.GetReport(id);
             if (report.Single)
-                report.SingleChoices = reportBO.GetSingleList<TRepository>(report);
+                report.SingleChoices = reportRepo.GetSingleList<TRepository>(report);
             foreach (var filter in report.Filters)
                 if (filter.IsListFilter)
-                    filter.ListValues = reportBO.GetFilterValues<TRepository>(filter);
+                    filter.ListValues = reportRepo.GetFilterValues<TRepository>(filter);
             return this.Request.IsAjaxRequest() ? PartialView(report) : (ActionResult)View(report);
         }
 
         public ReportResult Run([Bind(Exclude = "ReportFilterAttribute")] Joe.Business.Report.Report report)
         {
-            IReportRepository reportBO = new ReportRepository();
+            IReportRepository reportRepo = new ReportRepository();
 
-            var result = reportBO.Run<TRepository>(report);
+            var result = reportRepo.Run<TRepository>(report);
             var extension = this.Request.RequestContext.RouteData.Values["extension"];
             var isNotHtml = extension != null && !extension.ToString().ToLower().Contains("html");
-            var reportFromView = reportBO.GetReport(report.Name);
+            var reportFromView = reportRepo.GetReport(report.Name);
             DoddleReport.Report doddleReport = new DoddleReport.Report();
             if (!isNotHtml)
                 doddleReport.TextFields.Title = "<link href='/content/report.css' rel='stylesheet' />" + reportFromView.Name;
