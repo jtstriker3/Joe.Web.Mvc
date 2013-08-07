@@ -499,19 +499,16 @@ namespace Joe.Web.Mvc
 
         private Expression BuildFilterExpression()
         {
-            Expression ex = null;
+            Expression ex = Expression.Constant(_iquery);
             if (!String.IsNullOrEmpty(_filter))
             {
                 Expression filterEx = Expression.Lambda(_odataFilter.BuildExpression(), new ParameterExpression[] { _parameterExpression });
-                ex = Expression.Call(typeof(Queryable), "Where", new[] { _queryType }, Expression.Constant(_iquery), filterEx);
+                ex = Expression.Call(typeof(Queryable), "Where", new[] { _queryType }, ex, filterEx);
             }
             if (this._hasWhere)
                 ex = Expression.Call(typeof(FilterExtensions), "Filter", new[] { _queryType }, ex, Expression.Constant(_where), Expression.Constant(null, typeof(Object)));
 
-            if (ex.NotNull())
-                return ex;
-            else
-                return Expression.Constant(_iquery);
+            return ex;
         }
 
         private Expression BuildGroupByExpression(Expression ex)
