@@ -24,10 +24,12 @@ namespace Joe.Web.Mvc
     public class JoeQueryableAttribute : QueryableAttribute, IOrderedFilter
     {
         public int Order { get; private set; }
+
         public JoeQueryableAttribute()
         {
             Order = 999;
         }
+
         public override void OnActionExecuted(HttpActionExecutedContext actionExecutedContext)
         {
             try

@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Net.Http;
 using Joe.Business;
 using Joe.MapBack;
+using System.Web.Http.OData.Query;
 
 namespace Joe.Web.Mvc
 {
@@ -30,7 +31,11 @@ namespace Joe.Web.Mvc
             Repository = businessObject;
         }
 
-        [JoeQueryable, SetCrud, MapRepoFunctions]
+        [JoeQueryable(
+            AllowedQueryOptions = AllowedQueryOptions.All,
+            AllowedArithmeticOperators = AllowedArithmeticOperators.All,
+            AllowedLogicalOperators = AllowedLogicalOperators.All,
+            AllowedFunctions = AllowedFunctions.All), SetCrud, MapRepoFunctions]
         public virtual IQueryable<TViewModel> Get()
         {
             var viewModelList = this.Repository.Get(setCrudOverride: false, mapRepoFunctionsOverride: false);

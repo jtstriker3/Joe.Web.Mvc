@@ -66,14 +66,14 @@
     </Reference>
     <Reference Include="Joe.Caching, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Caching.1.0.0\lib\net40\Joe.Caching.dll</HintPath>
+      <HintPath>packages\Joe.Caching.1.0.1\lib\net40\Joe.Caching.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Init">
       <HintPath>packages\Joe.Init.1.0.0.2\lib\net40\Joe.Init.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Map, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Map.1.0.2.6\lib\net40\Joe.Map.dll</HintPath>
+      <HintPath>packages\Joe.Map.1.0.3.3\lib\net40\Joe.Map.dll</HintPath>
     </Reference>
     <Reference Include="Joe.MapBack, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -85,7 +85,7 @@
     </Reference>
     <Reference Include="Joe.Security, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Security.1.0.1.6\lib\net40\Joe.Security.dll</HintPath>
+      <HintPath>packages\Joe.Security.1.0.2.3\lib\net40\Joe.Security.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Data.OData, Version=5.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">

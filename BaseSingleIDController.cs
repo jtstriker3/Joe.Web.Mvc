@@ -10,6 +10,7 @@ using Joe.Business;
 using System.Linq.Expressions;
 using Joe.Web.Mvc.Utility.Extensions;
 using Joe.MapBack;
+using Joe.Reflection;
 
 namespace Joe.Web.Mvc
 {
@@ -274,6 +275,10 @@ namespace Joe.Web.Mvc
 
         protected virtual ActionResult DeleteResult(TViewModel viewModel)
         {
+            var filter = this.Request.QueryString["Filter"];
+            if (filter.NotNull())
+                return this.RedirectToAction(Options.RedirectOnDelete ?? "Index", new { where = filter + ":=:" + ReflectionHelper.GetEvalProperty(viewModel, filter).ToString() });
+
             return this.RedirectToAction(Options.RedirectOnDelete ?? "Index");
         }
 
