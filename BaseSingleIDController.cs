@@ -116,21 +116,8 @@ namespace Joe.Web.Mvc
 
         public virtual ActionResult Create()
         {
-            var set = Convert.ToString(Request.QueryString["set"]);
-            var viewModel = this.InitCreateModel();
-            if (viewModel.NotNull())
-            {
-                if (!String.IsNullOrEmpty(set))
-                {
-                    var propList = set.Split(':');
-                    for (int i = 0; i < propList.Length; i = i + 2)
-                    {
-                        Joe.Reflection.ReflectionHelper.SetEvalProperty(viewModel, propList[i], propList[i + 1]);
-                    }
-                }
-                this.Repository.MapRepoFunction(viewModel, false);
 
-            }
+            var viewModel = this.InitCreateModel();
             return Request.IsAjaxRequest() ? PartialView(viewModel) : (ActionResult)this.View(viewModel);
         }
 
@@ -139,7 +126,7 @@ namespace Joe.Web.Mvc
         {
             try
             {
-                var viewModel = new TViewModel();
+                var viewModel = this.InitCreateModel();
                 viewModel.SetIDs(this.Decode(id.Split('/')));
                 return this.Request.IsAjaxRequest() ?
                         PartialView("Create", viewModel) : (ActionResult)this.View("Create", viewModel);
@@ -274,9 +261,9 @@ namespace Joe.Web.Mvc
             {
                 var filter = this.Request.QueryString["Filter"];
                 if (filter.NotNull())
-                    return this.RedirectToAction(Options.RedirectOnCreate ?? "Index", new { where = BuildFilterString(filter, viewModel) });
+                    return this.RedirectToAction(Options.RedirectOnCreate ?? "Index", new { where = BuildFilterString(filter, viewModel), filter = filter });
             }
-            
+
             return this.RedirectToAction(Options.RedirectOnCreate ?? "Edit", Options.PassIDOnCreateRedirect ? new { ID = BuildIDRoute(viewModel), Success = true } : null);
         }
 
@@ -284,7 +271,7 @@ namespace Joe.Web.Mvc
         {
             var filter = this.Request.QueryString["Filter"];
             if (filter.NotNull())
-                return this.RedirectToAction(Options.RedirectOnDelete ?? "Index", new { where = BuildFilterString(filter, viewModel) });
+                return this.RedirectToAction(Options.RedirectOnDelete ?? "Index", new { where = BuildFilterString(filter, viewModel), filter = filter });
 
             return this.RedirectToAction(Options.RedirectOnDelete ?? "Index");
         }
@@ -295,7 +282,9 @@ namespace Joe.Web.Mvc
             {
                 var filter = this.Request.QueryString["Filter"];
                 if (filter.NotNull())
-                    return this.RedirectToAction("Index", new { where = BuildFilterString(filter, viewModel) });
+                    return this.RedirectToAction("Index", new { where = BuildFilterString(filter, viewModel), filter = filter });
+                else
+                    return this.RedirectToAction("Index");
             }
 
             return Request.IsAjaxRequest() ? PartialView(viewModel) : (ActionResult)this.View(viewModel);
@@ -303,7 +292,21 @@ namespace Joe.Web.Mvc
 
         protected virtual TViewModel InitCreateModel()
         {
-            return this.Repository.Default();
+            var viewModel = new TViewModel();
+            var set = Convert.ToString(Request.QueryString["set"]);
+            if (!String.IsNullOrEmpty(set))
+            {
+                var propList = set.Split(':');
+                for (int i = 0; i < propList.Length; i = i + 2)
+                {
+                    Joe.Reflection.ReflectionHelper.SetEvalProperty(viewModel, propList[i], propList[i + 1]);
+                }
+            }
+
+            viewModel = this.Repository.Default(viewModel);
+            this.Repository.MapRepoFunction(viewModel, false);
+            return viewModel;
+
         }
 
         private String BuildFilterString(String filter, TViewModel viewModel)
@@ -313,9 +316,9 @@ namespace Joe.Web.Mvc
             foreach (var filterProp in filterProps)
             {
                 if (filterString.NotNull())
-                    filterString = filter + ":=:" + ReflectionHelper.GetEvalProperty(viewModel, filter).ToString();
-                else
                     filterString += ":and:" + filter + ":=:" + ReflectionHelper.GetEvalProperty(viewModel, filter).ToString();
+                else
+                    filterString = filter + ":=:" + ReflectionHelper.GetEvalProperty(viewModel, filter).ToString();
             }
             return filterString;
         }

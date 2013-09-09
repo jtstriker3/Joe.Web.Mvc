@@ -9,5 +9,11 @@ namespace Joe.Web.Mvc
     {
         public String Type { get; private set; }
         public Object Data { get; private set; }
+
+        public AjaxActionData(String type, Object data)
+        {
+            Type = type;
+            Data = data;
+        }
     }
 }

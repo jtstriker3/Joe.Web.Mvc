@@ -33,5 +33,13 @@ namespace Joe.Web.Mvc.Utility.Configuration
                 return Convert.ToInt32(value);
             }
         }
+
+        public static String AdminRole
+        {
+            get
+            {
+                return System.Web.Configuration.WebConfigurationManager.AppSettings["AdminRole"] ?? "Administrators";
+            }
+        }
     }
 }
