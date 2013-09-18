@@ -16,6 +16,7 @@ using DoddleReport;
 using System.Reflection;
 using System.ComponentModel.DataAnnotations;
 using Joe.Business;
+using Joe.Reflection;
 
 namespace Joe.Web.Mvc.Utility.Extensions
 {
@@ -99,16 +100,19 @@ namespace Joe.Web.Mvc.Utility.Extensions
 
         public static void CleanDataAttributes(this IDictionary<String, Object> dictionary)
         {
-            var dictionaryCopy = dictionary.ToDictionary(dict => dict.Key, dict => dict.Value);
-
-            foreach (var item in dictionaryCopy)
+            if (dictionary.NotNull())
             {
-                if (item.Key.StartsWith("data"))
+                var dictionaryCopy = dictionary.ToDictionary(dict => dict.Key, dict => dict.Value);
+
+                foreach (var item in dictionaryCopy)
                 {
-                    var value = item.Value;
-                    var key = item.Key.Replace("_", "-");
-                    dictionary.Remove(item.Key);
-                    dictionary.Add(key, value);
+                    if (item.Key.StartsWith("data"))
+                    {
+                        var value = item.Value;
+                        var key = item.Key.Replace("_", "-");
+                        dictionary.Remove(item.Key);
+                        dictionary.Add(key, value);
+                    }
                 }
             }
         }
@@ -263,6 +267,41 @@ namespace Joe.Web.Mvc.Utility.Extensions
                 return ((IEnumerable)Expression.Lambda(Expression.Call(typeof(Enumerable), "Cast", new[] { type }, Expression.Constant(list))).Compile().DynamicInvoke()).AsQueryable();
 
             return list.AsQueryable();
+        }
+
+        public static String BuildFilterString(String filter, Object viewModel)
+        {
+            var filterProps = filter.Split(',');
+
+            return BuildFilterString(filterProps, viewModel);
+        }
+
+        public static String BuildFilterString(IEnumerable<String> filter, Object viewModel)
+        {
+            String filterString = null;
+            foreach (var filterProp in filter)
+            {
+                if (filterString.NotNull())
+                    filterString += ":and:" + filterProp + ":=:" + ReflectionHelper.GetEvalProperty(viewModel, filterProp).ToString();
+                else
+                    filterString = filterProp + ":=:" + ReflectionHelper.GetEvalProperty(viewModel, filterProp).ToString();
+            }
+            return filterString;
+        }
+
+        public static String BuildFilterString(IEnumerable<String> filter, IEnumerable<Object> ids)
+        {
+            String filterString = null;
+            var count = 0;
+            foreach (var filterProp in filter)
+            {
+                if (filterString.NotNull())
+                    filterString += ":and:" + filterProp + ":=:" + ids.ElementAt(count);
+                else
+                    filterString = filterProp + ":=:" + ids.ElementAt(count);
+                count++;
+            }
+            return filterString;
         }
     }
 }

@@ -52,10 +52,13 @@ namespace Joe.Web.Mvc
             {
                 foreach (var filterProp in Options.FilterProperties)
                 {
-                    if (!filterString.NotNull())
-                        filterString = filterProp + ":Contains:" + filter;
-                    else
-                        filterString += ":or:" + filterProp + ":Contains:" + filter;
+                    foreach (var search in filter.Split('|'))
+                    {
+                        if (!filterString.NotNull())
+                            filterString = filterProp + ":Contains:" + search.Trim();
+                        else
+                            filterString += ":or:" + filterProp + ":Contains:" + search.Trim();
+                    }
                 }
             }
             return Index(null, filterString: filterString);
@@ -72,7 +75,7 @@ namespace Joe.Web.Mvc
                     int? take, skip;
                     string orderBy, where;
                     Boolean descending = false;
-                    take = filterString.NotNull() ? null : Request.QueryString["take"].ToNullable<int>();
+                    take = Request.QueryString["take"].ToNullable<int>();
                     skip = filterString.NotNull() ? null : Request.QueryString["skip"].ToNullable<int>();
                     orderBy = Convert.ToString(Request.QueryString["orderby"]);
                     descending = Convert.ToBoolean(Request.QueryString["descending"]);
@@ -99,10 +102,11 @@ namespace Joe.Web.Mvc
         public virtual ActionResult Details(String id)
         {
             TViewModel viewModel = null;
-            id = this.Decode(id).Single();
+            var decodeIds = id.Split('/');
+            decodeIds = this.Decode(decodeIds).ToArray();
             try
             {
-                viewModel = this.Repository.Get(id);
+                viewModel = this.Repository.Get(decodeIds);
             }
             catch (Exception ex)
             {
@@ -261,7 +265,7 @@ namespace Joe.Web.Mvc
             {
                 var filter = this.Request.QueryString["Filter"];
                 if (filter.NotNull())
-                    return this.RedirectToAction(Options.RedirectOnCreate ?? "Index", new { where = BuildFilterString(filter, viewModel), filter = filter });
+                    return this.RedirectToAction(Options.RedirectOnCreate ?? "Index", new { where = HelperExtentions.BuildFilterString(filter, viewModel), filter = filter });
             }
 
             return this.RedirectToAction(Options.RedirectOnCreate ?? "Edit", Options.PassIDOnCreateRedirect ? new { ID = BuildIDRoute(viewModel), Success = true } : null);
@@ -271,7 +275,7 @@ namespace Joe.Web.Mvc
         {
             var filter = this.Request.QueryString["Filter"];
             if (filter.NotNull())
-                return this.RedirectToAction(Options.RedirectOnDelete ?? "Index", new { where = BuildFilterString(filter, viewModel), filter = filter });
+                return this.RedirectToAction(Options.RedirectOnDelete ?? "Index", new { where = HelperExtentions.BuildFilterString(filter, viewModel), filter = filter });
 
             return this.RedirectToAction(Options.RedirectOnDelete ?? "Index");
         }
@@ -282,7 +286,7 @@ namespace Joe.Web.Mvc
             {
                 var filter = this.Request.QueryString["Filter"];
                 if (filter.NotNull())
-                    return this.RedirectToAction("Index", new { where = BuildFilterString(filter, viewModel), filter = filter });
+                    return this.RedirectToAction("Index", new { where = HelperExtentions.BuildFilterString(filter, viewModel), filter = filter });
                 else
                     return this.RedirectToAction("Index");
             }
@@ -307,20 +311,6 @@ namespace Joe.Web.Mvc
             this.Repository.MapRepoFunction(viewModel, false);
             return viewModel;
 
-        }
-
-        private String BuildFilterString(String filter, TViewModel viewModel)
-        {
-            var filterProps = filter.Split(',');
-            String filterString = null;
-            foreach (var filterProp in filterProps)
-            {
-                if (filterString.NotNull())
-                    filterString += ":and:" + filter + ":=:" + ReflectionHelper.GetEvalProperty(viewModel, filter).ToString();
-                else
-                    filterString = filter + ":=:" + ReflectionHelper.GetEvalProperty(viewModel, filter).ToString();
-            }
-            return filterString;
         }
 
     }

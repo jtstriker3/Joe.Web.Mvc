@@ -5,7 +5,7 @@ using System.Web;
 
 namespace Joe.Web.Mvc
 {
-    public class ControllerDisplayAttribute
+    public class ControllerDisplayAttribute : Attribute
     {
         public Boolean Hide { get; set; }
         public String Name { get; set; }

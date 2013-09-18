@@ -4,6 +4,7 @@ using System.Linq;
 using System.Web;
 using System.Configuration;
 using System.Web.Configuration;
+using Joe.Web.Mvc.Utility.Extensions;
 
 namespace Joe.Web.Mvc.Utility.Configuration
 {
@@ -39,6 +40,15 @@ namespace Joe.Web.Mvc.Utility.Configuration
             get
             {
                 return System.Web.Configuration.WebConfigurationManager.AppSettings["AdminRole"] ?? "Administrators";
+            }
+        }
+
+        public static String AdminArea
+        {
+            get
+            {
+                var adminArea = System.Web.Configuration.WebConfigurationManager.AppSettings["AdminArea"] as String;
+                return adminArea.NotNull() ? adminArea + "/" : String.Empty;
             }
         }
     }

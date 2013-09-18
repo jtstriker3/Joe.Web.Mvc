@@ -58,6 +58,13 @@ namespace Joe.Web.Mvc.Utility.Extensions
             var groupedEnumerable =
                 enumerable.Cast<Object>().GroupBy(enumType => Joe.Reflection.ReflectionHelper.GetEvalProperty(enumType, groupByString));
 
+            if (groupContainerAttributes.NotNull())
+                groupContainerAttributes.CleanDataAttributes();
+            if (groupByTagAttributes.NotNull())
+                groupByTagAttributes.CleanDataAttributes();
+            if (headerTagAttributes.NotNull())
+                headerTagAttributes.CleanDataAttributes();
+
             var container = new TagBuilder(containerTag ?? "ul");
             container.MergeAttributes(groupContainerAttributes);
             var i = 0;
@@ -86,13 +93,15 @@ namespace Joe.Web.Mvc.Utility.Extensions
         #endregion
 
         #region Paging/Sorting
-        public static MvcHtmlString Pager(this HtmlHelper html, Object containerAttributes = null, Object recordsAttributes = null, int? count = null, String updateID = null, String url = null)
+        public static MvcHtmlString Pager(this HtmlHelper html, Object containerAttributes = null, Object recordsAttributes = null, Object pagerListAttributes = null, int? count = null, String updateID = null, String url = null, String appendQueryString = null)
         {
             return Pager(html, containerAttributes.NotNull() ? new RouteValueDictionary(containerAttributes) : null,
-                recordsAttributes.NotNull() ? new RouteValueDictionary(recordsAttributes) : null, count, updateID, url);
+                recordsAttributes.NotNull() ? new RouteValueDictionary(recordsAttributes) : null,
+                pagerListAttributes.NotNull() ? new RouteValueDictionary(pagerListAttributes) : null,
+                count, updateID, url, appendQueryString);
         }
 
-        public static MvcHtmlString Pager(this HtmlHelper html, IDictionary<String, Object> containerAttributes, IDictionary<String, Object> recordsAttributes, int? count, String updateID, String url)
+        public static MvcHtmlString Pager(this HtmlHelper html, IDictionary<String, Object> containerAttributes, IDictionary<String, Object> recordsAttributes, IDictionary<String, Object> pagerListAttributes, int? count, String updateID, String url, String appendQueryString)
         {
             var ViewBag = html.ViewBag;
             count = count ?? ViewBag.Count ?? 0;
@@ -112,9 +121,18 @@ namespace Joe.Web.Mvc.Utility.Extensions
             if (end > count)
                 end = count.Value;
 
+            if (containerAttributes.NotNull())
+                containerAttributes.CleanDataAttributes();
+            if (recordsAttributes.NotNull())
+                recordsAttributes.CleanDataAttributes();
+            if (pagerListAttributes.NotNull())
+                pagerListAttributes.CleanDataAttributes();
+
             var container = new TagBuilder("div");
+
             container.MergeAttributes(containerAttributes);
             var ul = new TagBuilder("ul");
+            ul.MergeAttributes(pagerListAttributes);
 
             var prev = new TagBuilder("li");
             var prevLink = new TagBuilder("a");
@@ -135,7 +153,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
             if (ajax)
                 nextLink.MergeAttributes(ajaxAttributes);
 
-            String nextQueryString = String.Format("?take={0}&skip={1}", ViewBag.Take, end) + html.GetCurrentOrderByQueryString() + html.GetCurrentWhereQueryString();
+            String nextQueryString = String.Format("?take={0}&skip={1}", ViewBag.Take, end) + html.GetCurrentOrderByQueryString() + html.GetCurrentWhereQueryString() + (appendQueryString.NotNull() ? "&" + appendQueryString : null);
             nextLink.Attributes.Add("href", url + nextQueryString);
 
             if (count <= end)
@@ -160,7 +178,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
             return SortFor(html, name, updateID, url);
         }
 
-        public static MvcHtmlString SortFor(this HtmlHelper html, String expression, String updateID = null, String url = null, String headerText = null)
+        public static MvcHtmlString SortFor(this HtmlHelper html, String expression, String updateID = null, String url = null, String headerText = null, String additionalQueryStringValues = null)
         {
             var sorted = html.ViewBag.OrderBy == expression;
             var take = (html.ViewBag.Take ?? Configuration.ConfigurationHelper.PageSize);
@@ -171,7 +189,6 @@ namespace Joe.Web.Mvc.Utility.Extensions
             var ajaxAttributes = new Dictionary<String, String>();
             ajaxAttributes.Add("data-ajax", "true");
             ajaxAttributes.Add("data-ajax-update", updateID);
-
             var headerLink = new TagBuilder("a");
 
             headerLink.InnerHtml = headerText ?? html.DisplayName(expression).ToString();
@@ -184,7 +201,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
                 headerLink.InnerHtml += caret.ToString();
             }
             var where = html.ViewBag.Where;
-            var queryString = String.Format("?orderby={0}&descending={1}", expression, !descending) + html.GetCurrentPageQueryString() + html.GetCurrentWhereQueryString();
+            var queryString = String.Format("?orderby={0}&descending={1}", expression, !descending) + html.GetCurrentPageQueryString() + html.GetCurrentWhereQueryString() + (additionalQueryStringValues.NotNull() ? "&" + additionalQueryStringValues : null);
 
             headerLink.MergeAttribute("href", url + queryString);
 
@@ -231,6 +248,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
             if (htmlAttributes.NotNull())
             {
                 var linkAttributes = new RouteValueDictionary(htmlAttributes);
+                linkAttributes.CleanDataAttributes();
                 link.MergeAttributes(linkAttributes);
             }
             if (ajaxLoad.NotNull())
@@ -273,6 +291,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
             if (htmlAttributes.NotNull())
             {
                 var linkAttributes = new RouteValueDictionary(htmlAttributes);
+                linkAttributes.CleanDataAttributes();
                 link.MergeAttributes(linkAttributes);
             }
             link.MergeAttribute("href", url);
@@ -413,6 +432,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
             where TValue : IEnumerable
         {
             var count = 0;
+            rowAttributes.CleanDataAttributes();
             ICollection<TagBuilder> rows = new List<TagBuilder>();
             TagBuilder row = null;
             foreach (var item in expression.Compile().Invoke(html.ViewData.Model))
@@ -452,9 +472,9 @@ namespace Joe.Web.Mvc.Utility.Extensions
             this HtmlHelper htmlHelper,
             string actionName = null,
             string controllerName = null,
-            RouteValueDictionary routeValues = null,
+            Object routeValues = null,
             FormMethod method = FormMethod.Post,
-            IDictionary<string, object> htmlAttributes = null)
+            Object htmlAttributes = null)
         {
             if (!htmlHelper.ViewContext.HttpContext.Request.IsAjaxRequest())
             {
@@ -462,31 +482,35 @@ namespace Joe.Web.Mvc.Utility.Extensions
             }
             else
             {
-                var updateTargetID = htmlHelper.ViewContext.HttpContext.Request.QueryString["UpdateTargetId"];
-                var filter = htmlHelper.ViewContext.HttpContext.Request.QueryString["filter"];
-                routeValues = routeValues ?? new RouteValueDictionary();
-                routeValues.Add("UpdateTargetId", updateTargetID);
-                routeValues.Add("filter", filter);
+                String updateTargetID = htmlHelper.ViewContext.HttpContext.Request.QueryString["UpdateTargetId"];
+                String filter = htmlHelper.ViewContext.HttpContext.Request.QueryString["filter"];
+                var htmlAttributesDictionary = new RouteValueDictionary(htmlAttributes);
+                var routeValueDictionary = new RouteValueDictionary(routeValues);
+                routeValueDictionary.Add("UpdateTargetId", updateTargetID);
+                routeValueDictionary.Add("filter", filter);
+
                 return new AjaxHelper(htmlHelper.ViewContext, htmlHelper.ViewDataContainer, htmlHelper.RouteCollection).BeginForm(
                     actionName,
                     controllerName,
-                    routeValues,
+                    routeValueDictionary,
                     new AjaxOptions
                     {
                         UpdateTargetId = updateTargetID
                     },
-                    htmlAttributes);
+                    htmlAttributesDictionary);
 
             }
 
         }
 
         public static MvcHtmlString ModalEditorForList<TModel, TValue>(
-           this HtmlHelper<TModel> html,
-           Expression<Func<TModel, IEnumerable<TValue>>> propertyExpression,
-           String controllerName,
-           Object tableAttributes = null,
-           IEnumerable<String> columns = null,
+            this HtmlHelper<TModel> html,
+            Expression<Func<TModel, IEnumerable<TValue>>> propertyExpression,
+            String controllerName,
+            Object tableAttributes = null,
+            IEnumerable<String> columns = null,
+            Boolean showDetails = false,
+            Action<TagBuilder, TValue> setRowAttributes = null,
            params String[] keyProperties)
         {
 
@@ -501,20 +525,13 @@ namespace Joe.Web.Mvc.Utility.Extensions
 
             if (!html.ViewContext.HttpContext.Request.IsAjaxRequest())
             {
-                container.InnerHtml = items.Table(html, tableAttributes, tableID, controllerName, true, false, columns, keyProperties).ToString();
+                container.InnerHtml = items.Table(html, tableAttributes, tableID, controllerName, true, false, showDetails, true, true, setRowAttributes, columns, keyProperties).ToString();
 
-                //Create Container
-                var modalContainer = new TagBuilder("div");
-                modalContainer.AddCssClass("modal hide fade");
+
                 var modalContainerID = Guid.NewGuid().ToString().Replace("-", String.Empty);
-                modalContainer.Attributes.Add("id", modalContainerID);
+                var createContainer = BootstrapModal(modalContainerID);
 
-                var createContainer = new TagBuilder("div");
-                createContainer.AddCssClass("modal-body");
-                modalContainer.InnerHtml = createContainer.ToString();
-
-                container.InnerHtml += modalContainer.ToString();
-
+                container.InnerHtml += createContainer.ToString();
                 //Create Link
 
                 var keyValues = html.ViewData.Model.GetIDs();
@@ -538,30 +555,64 @@ namespace Joe.Web.Mvc.Utility.Extensions
                 return new MvcHtmlString(container.ToString());
             }
             else
-                return items.Table(html, tableAttributes, tableID, controllerName, true, false, columns, keyProperties);
+                return items.Table(html, tableAttributes, tableID, controllerName, true, false, showDetails, true, true, setRowAttributes, columns, keyProperties);
 
         }
 
         #region Table
 
-        public static MvcHtmlString TableFor<TModel, TValue>(this HtmlHelper<TModel> html, Expression<Func<TModel, IEnumerable<TValue>>> propertyExpression, Object tableAttributes = null, String id = null, String controllerName = null, Boolean isAjax = true, Boolean readOnly = false, IEnumerable<String> columns = null, params String[] filterColumns)
+        public static MvcHtmlString TableFor<TModel, TValue>(this HtmlHelper<TModel> html,
+            Expression<Func<TModel, IEnumerable<TValue>>> propertyExpression,
+            Object tableAttributes = null,
+            String id = null,
+            String controllerName = null,
+            Boolean isAjax = true, Boolean readOnly = false,
+            Boolean showDetails = true,
+            Boolean page = true,
+            Boolean sortable = true,
+            Action<TagBuilder, TValue> setRowAttributes = null,
+            IEnumerable<String> columns = null,
+            params String[] filterColumns)
         {
             var items = propertyExpression.Compile().Invoke(html.ViewData.Model);
-            return items.Table(html, tableAttributes, id ?? html.ViewContext.HttpContext.Request.QueryString["UpdateTargetId"], controllerName, isAjax, readOnly, columns, filterColumns);
+            return items.Table(html, tableAttributes, id ?? html.ViewContext.HttpContext.Request.QueryString["UpdateTargetId"], controllerName, isAjax, readOnly, showDetails, page, sortable, setRowAttributes, columns, filterColumns);
         }
 
-        public static MvcHtmlString Table<TModel, TValue>(this IEnumerable<TValue> items, HtmlHelper<TModel> html, Object tableAttributes = null, String id = null, String controllerName = null, Boolean isAjax = true, Boolean readOnly = false, IEnumerable<String> columns = null, params String[] filterColumns)
+        public static MvcHtmlString Table<TModel, TValue>(this IEnumerable<TValue> items,
+            HtmlHelper<TModel> html,
+            Object tableAttributes = null,
+            String id = null,
+            String controllerName = null,
+            Boolean isAjax = true,
+            Boolean readOnly = false,
+            Boolean showDetails = true,
+            Boolean page = true,
+            Boolean sortable = true,
+            Action<TagBuilder, TValue> setRowAttributes = null,
+            IEnumerable<String> columns = null,
+            params String[] filterColumns)
         {
             var isAdmin = html.ViewContext.HttpContext.User.IsInRole(Configuration.ConfigurationHelper.AdminRole);
             var crudPropertyNames = new List<String>() { "CanRead", "CanUpdate", "CanCreate", "CanDelete" };
             var filterQuerString = html.ViewContext.HttpContext.Request.QueryString["Filter"];
+            var updateIDQueryString = html.ViewContext.HttpContext.Request.QueryString["updateTargetID"];
+            var area = html.GetAreaPath();
             var resourceProvider = Joe.Business.Resource.ResourceProvider.ProviderInstance;
+            var take = html.ViewContext.HttpContext.Request.QueryString["take"];
+            int takeInt = take.NotNull() ? Int32.Parse(take) : Configuration.ConfigurationHelper.PageSize;
             UrlHelper urlHelper = new UrlHelper(html.ViewContext.RequestContext);
-
-            id = id ?? Guid.NewGuid().ToString().Replace("-", String.Empty);
+            id = id ?? updateIDQueryString ?? Guid.NewGuid().ToString().Replace("-", String.Empty);
             columns = columns ?? new List<String>();
             controllerName = controllerName ?? html.ViewContext.RouteData.Values["controller"].ToString();
-            filterColumns = filterColumns.Count() > 0 ? filterColumns : filterQuerString.NotNull() ? filterQuerString.Split(',') : filterColumns;
+            var filterColumnsSetByQueryString = false;
+            if (filterColumns.Count() == 0)
+            {
+                if (filterQuerString.NotNull())
+                {
+                    filterColumns = filterQuerString.Split(',');
+                    filterColumnsSetByQueryString = true;
+                }
+            }
 
             var properties = typeof(TValue).GetProperties().Where(prop =>
               prop.PropertyType.IsSimpleType()
@@ -582,6 +633,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
             }
 
             var dictTableAttributes = new RouteValueDictionary(tableAttributes);
+            dictTableAttributes.CleanDataAttributes();
             var tableContainer = new TagBuilder("div");
             var table = new TagBuilder("table");
 
@@ -592,6 +644,20 @@ namespace Joe.Web.Mvc.Utility.Extensions
             PropertyInfo canUpdateInfo = null;
             PropertyInfo canDeleteInfo = null;
             PropertyInfo canReadInfo = null;
+
+            //This is sloppy Come back and clean up later
+            String sortQueryString = null;
+            if (!filterColumnsSetByQueryString && isAjax)
+            {
+                sortQueryString = "where=" + HelperExtentions.BuildFilterString(filterColumns, html.ViewData.Model.GetIDs());
+                sortQueryString += "&UpdateTargetId=" + id;
+                sortQueryString += "&filter=" + BuildFilterColumnsQueryString(filterColumns);
+            }
+            else if (isAjax)
+            {
+                sortQueryString += "UpdateTargetId=" + id;
+                sortQueryString += "&filter=" + BuildFilterColumnsQueryString(filterColumns);
+            }
 
             foreach (var property in properties)
             {
@@ -634,20 +700,35 @@ namespace Joe.Web.Mvc.Utility.Extensions
                         hasResource = false;
                     }
 
-                    header.InnerHtml = html.SortFor(property.Name, "#" + id, urlHelper.Action(null, controllerName), headerText).ToString() + GenerateResourceLink(hasResource, html, property.Name, property.DeclaringType.Name);
+                    header.Attributes.Add("data-property", property.Name);
+                    header.Attributes.Add("data-placeholder", headerText);
+                    header.Attributes.Add("data-property-type", property.PropertyType.Name);
+
+                    if (sortable)
+                        header.InnerHtml = html.SortFor(property.Name, (isAjax ? "#" + id : null), urlHelper.Action("index", controllerName), headerText, sortQueryString).ToString() + GenerateResourceLink(hasResource, html, property.Name, property.DeclaringType.Name);
+                    else
+                        header.InnerHtml = headerText;
                     headerRow.InnerHtml += header.ToString();
                 }
             }
-            if (!readOnly)
+            if (!readOnly || showDetails)
             {
                 //Action Row
                 headerRow.InnerHtml += new TagBuilder("th");
             }
             table.InnerHtml = headerRow.ToString();
             List<String> itemEditModalIds = new List<string>();
+            int count = 0;
             if (items != null)
             {
                 //Build table
+
+                //If Table is paged then show Paged Records
+                count = items.Count(); ;
+                if (page)
+                {
+                    items = items.Take(takeInt);
+                }
                 foreach (var item in items)
                 {
                     var canUpdate = canUpdateInfo.NotNull() ? (Boolean)canUpdateInfo.GetValue(item, null) : true;
@@ -655,6 +736,9 @@ namespace Joe.Web.Mvc.Utility.Extensions
                     var canRead = canReadInfo.NotNull() ? (Boolean)canUpdateInfo.GetValue(item, null) : true;
                     var editModalId = Guid.NewGuid().ToString().Replace("-", String.Empty);
                     var row = new TagBuilder("tr");
+                    if (setRowAttributes.NotNull())
+                        setRowAttributes(row, item);
+
                     foreach (var property in properties)
                     {
                         if (!crudPropertyNames.Contains(property.Name))
@@ -672,9 +756,10 @@ namespace Joe.Web.Mvc.Utility.Extensions
                     if (!readOnly)
                     {
                         //Adding Delete and Edit Links
-                        var editHref = UrlHelper.GenerateContentUrl("~/" + html.ViewContext.RouteData.DataTokens["area"].ToString() + "/" + controllerName + "/edit/" + item.GetIDs().ToRoute().Encode() + (isAjax ? "?UpdateTargetId=" + id : String.Empty) + (filterColumns.Count() > 0 ? "&filter=" + BuildFilterColumnsQueryString(filterColumns) : String.Empty), html.ViewContext.HttpContext);
+                        var quickEditHref = UrlHelper.GenerateContentUrl("~/" + area + controllerName + "/edit/" + item.GetIDs().ToRoute().Encode() + (isAjax ? "?UpdateTargetId=" + id : String.Empty) + (filterColumns.Count() > 0 ? "&filter=" + BuildFilterColumnsQueryString(filterColumns) : String.Empty), html.ViewContext.HttpContext);
+                        var editHref = UrlHelper.GenerateContentUrl("~/" + area + controllerName + "/edit/" + item.GetIDs().ToRoute().Encode(), html.ViewContext.HttpContext);
                         var editLink = new TagBuilder("a");
-                        editLink.Attributes.Add("href", editHref);
+                        editLink.Attributes.Add("href", quickEditHref);
                         var fullEdit = new TagBuilder("a");
                         fullEdit.Attributes.Add("href", editHref);
                         if (isAjax)
@@ -688,44 +773,60 @@ namespace Joe.Web.Mvc.Utility.Extensions
                             itemEditModalIds.Add(editModalId);
                         }
                         editLink.InnerHtml = "Quick Edit".GetGlobalResource();
-                        fullEdit.InnerHtml = "Full Edit".GetGlobalResource();
+                        fullEdit.InnerHtml = "Edit".GetGlobalResource();
                         var deleteLink = new TagBuilder("a");
-                        deleteLink.Attributes.Add("href", UrlHelper.GenerateContentUrl("~/" + html.ViewContext.RouteData.DataTokens["area"].ToString() + "/" + controllerName + "/delete/" + item.GetIDs().ToRoute().Encode() + (isAjax ? "?UpdateTargetId=" + id : String.Empty) + (filterColumns.Count() > 0 ? "&filter=" + BuildFilterColumnsQueryString(filterColumns) : String.Empty), html.ViewContext.HttpContext));
+                        deleteLink.Attributes.Add("href", UrlHelper.GenerateContentUrl("~/" + area + controllerName + "/delete/" + item.GetIDs().ToRoute().Encode() + (isAjax ? "?UpdateTargetId=" + id : String.Empty) + (filterColumns.Count() > 0 ? "&filter=" + BuildFilterColumnsQueryString(filterColumns) : String.Empty), html.ViewContext.HttpContext));
                         deleteLink.InnerHtml = "Delete".GetGlobalResource();
                         if (isAjax)
                         {
                             deleteLink.Attributes.Add("data-ajax", "true");
                             deleteLink.Attributes.Add("data-ajax-update", "#" + id);
                         }
+
+                        var printView = new TagBuilder("a");
+                        var printHref = UrlHelper.GenerateContentUrl("~/" + area + controllerName + "/details/" + item.GetIDs().ToRoute().Encode() + (filterColumns.Count() > 0 ? "&filter=" + BuildFilterColumnsQueryString(filterColumns) : String.Empty), html.ViewContext.HttpContext);
+                        printView.InnerHtml += "Details".GetGlobalResource();
+                        printView.Attributes.Add("href", printHref);
+
                         var pullLeftSpan = new TagBuilder("span");
                         pullLeftSpan.AddCssClass("pull-right");
-                        pullLeftSpan.InnerHtml = (isAjax ? (canUpdate ? editLink.ToString() : editLink.InnerHtml) + " | " : String.Empty) + (canUpdate ? fullEdit.ToString() : fullEdit.InnerHtml) + " | " + (canDelete ? deleteLink.ToString() : deleteLink.InnerHtml);
+                        pullLeftSpan.InnerHtml = (isAjax ? (canUpdate ? editLink.ToString() : editLink.InnerHtml) + " | " : String.Empty) + (canUpdate ? fullEdit.ToString() : fullEdit.InnerHtml) + " | " + (canDelete ? deleteLink.ToString() : deleteLink.InnerHtml) + (showDetails ? " | " + (canRead ? printView.ToString() : printView.InnerHtml) : String.Empty);
                         row.InnerHtml += new TagBuilder("td") { InnerHtml = pullLeftSpan.ToString() };
-
                     }
+                    else if (showDetails)
+                    {
+                        var printView = new TagBuilder("a");
+                        var printHref = UrlHelper.GenerateContentUrl("~/" + area + controllerName + "/details/" + item.GetIDs().ToRoute().Encode() + (filterColumns.Count() > 0 ? "&filter=" + BuildFilterColumnsQueryString(filterColumns) : String.Empty), html.ViewContext.HttpContext);
+                        printView.InnerHtml += "Details".GetGlobalResource();
+                        printView.Attributes.Add("href", printHref);
+
+                        var pullLeftSpan = new TagBuilder("span");
+                        pullLeftSpan.AddCssClass("pull-right");
+                        pullLeftSpan.InnerHtml = canRead ? printView.ToString() : printView.InnerHtml;
+                        row.InnerHtml += new TagBuilder("td") { InnerHtml = pullLeftSpan.ToString() };
+                    }
+
                     table.InnerHtml += row.ToString();
                 }
             }
             if (isAjax && !readOnly)
                 foreach (var editId in itemEditModalIds)
                 {
-                    var modalContainer = new TagBuilder("div");
-                    modalContainer.AddCssClass("modal hide fade");
-                    var modalContainerID = Guid.NewGuid().ToString().Replace("-", String.Empty);
-                    modalContainer.Attributes.Add("id", editId);
-
-                    var editContainer = new TagBuilder("div");
-                    editContainer.AddCssClass("modal-body");
-                    modalContainer.InnerHtml = editContainer.ToString();
-                    tableContainer.InnerHtml += modalContainer.ToString();
+                    tableContainer.InnerHtml += BootstrapModal(editId);
                 }
 
             tableContainer.InnerHtml += table.ToString();
-            tableContainer.InnerHtml += html.Pager(new { @class = "pagination pull-right" }, new { @class = "page-count pull-right" }, updateID: "#" + id, url: urlHelper.Action(null, controllerName));
-            var clearBothdiv = new TagBuilder("div");
-            clearBothdiv.Attributes.Add("style", "clear: both;");
-            tableContainer.InnerHtml += clearBothdiv.ToString();
-            return new MvcHtmlString(tableContainer.ToString());
+            if (page)
+            {
+                tableContainer.InnerHtml += html.Pager(new { @class = "pull-right" }, new { @class = "page-count pull-right" }, new { @class = "pagination" }, updateID: (isAjax ? "#" + id : null), url: urlHelper.Action("index", controllerName), count: count, appendQueryString: sortQueryString);
+                var clearBothdiv = new TagBuilder("div");
+                clearBothdiv.Attributes.Add("style", "clear: both;");
+                tableContainer.InnerHtml += clearBothdiv.ToString();
+            }
+            if (updateIDQueryString.NotNull())
+                return new MvcHtmlString(tableContainer.InnerHtml);
+            else
+                return new MvcHtmlString(tableContainer.ToString());
         }
 
         #endregion
@@ -842,16 +943,16 @@ namespace Joe.Web.Mvc.Utility.Extensions
             var editContainer = new TagBuilder("span");
             var editLink = new TagBuilder("a");
             var editIcon = new TagBuilder("i");
-            editIcon.AddCssClass("icon-edit");
+            editIcon.AddCssClass("glyphicon glyphicon-edit");
             editLink.InnerHtml = editIcon.ToString();
             if (hasResource)
             {
-                var editLinkHref = UrlHelper.GenerateContentUrl(String.Format("~/administration/resource/edit/{0}/{1}/{2}", name, culture, type), html.ViewContext.HttpContext);
+                var editLinkHref = UrlHelper.GenerateContentUrl(String.Format("~/" + Configuration.ConfigurationHelper.AdminArea + "resource/edit/{0}/{1}/{2}", name, culture, type), html.ViewContext.HttpContext);
                 editLink.Attributes.Add("href", editLinkHref);
             }
             else
             {
-                var editLinkHref = UrlHelper.GenerateContentUrl(String.Format("~/administration/resource/create?set=Name:{0}:Culture:{1}:Type:{2}", name, culture, type), html.ViewContext.HttpContext);
+                var editLinkHref = UrlHelper.GenerateContentUrl(String.Format("~/" + Configuration.ConfigurationHelper.AdminArea + "resource/create?set=Name:{0}:Culture:{1}:Type:{2}", name, culture, type), html.ViewContext.HttpContext);
                 editLink.Attributes.Add("href", editLinkHref);
             }
 
@@ -860,6 +961,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
         }
 
         private static IEnumerable<Type> LoadedControllerTypes { get; set; }
+
         private static Type GetControllerTypeByName(String controllerName, String nameSpace)
         {
             LoadedControllerTypes = LoadedControllerTypes ?? AppDomain.CurrentDomain.GetAssemblies().SelectMany(assem => assem.GetTypes()).Where(type => typeof(Controller).IsAssignableFrom(type));
@@ -929,6 +1031,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
         {
             var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(assembly => assembly.GetTypes());
             var keyPairAttributes = new RouteValueDictionary(htmlAttribute);
+            keyPairAttributes.CleanDataAttributes();
             var currentController = html.ViewContext.Controller.GetType().Name;
             var controllers = types.Where(type => type.Namespace == nameSpace
                                             && typeof(Controller).IsAssignableFrom(type)
@@ -964,6 +1067,37 @@ namespace Joe.Web.Mvc.Utility.Extensions
             }
 
             return new MvcHtmlString(ul.ToString());
+        }
+
+        private static String GetAreaPath(this HtmlHelper html)
+        {
+            String area = html.ViewContext.RouteData.DataTokens["area"] as String;
+            area = area.NotNull() ? area + "/" : string.Empty;
+            return area;
+        }
+
+        private static TagBuilder BootstrapModal(String modalID, String innerHtml = null)
+        {
+            var modalContainer = new TagBuilder("div");
+            modalContainer.AddCssClass("modal fade");
+            modalContainer.Attributes.Add("role", "dialog");
+            modalContainer.Attributes.Add("aria-hidden", "true");
+
+            var modalDialog = new TagBuilder("div");
+            modalDialog.AddCssClass("modal-dialog");
+
+            var modalContent = new TagBuilder("div");
+            modalContent.AddCssClass("modal-content");
+
+            var createContainer = new TagBuilder("div");
+            createContainer.AddCssClass("modal-body");
+            modalContent.InnerHtml = createContainer.ToString();
+            modalDialog.InnerHtml = modalContent.ToString();
+            modalContainer.InnerHtml = modalDialog.ToString();
+
+            modalContainer.Attributes.Add("id", modalID);
+
+            return modalContainer;
         }
 
     }
