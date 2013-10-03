@@ -35,6 +35,7 @@ namespace Joe.Web.Mvc
             ViewBag.TrueDelete = Options.TrueDelete;
             ViewBag.ShowSubMenu = Options.ShowSubMenu;
             ViewBag.ShowCreate = Options.ShowCreate;
+            ViewBag.Create = false;
 
             Repository = businessObject;
         }
@@ -120,7 +121,7 @@ namespace Joe.Web.Mvc
 
         public virtual ActionResult Create()
         {
-
+            ViewBag.Create = true;
             var viewModel = this.InitCreateModel();
             return Request.IsAjaxRequest() ? PartialView(viewModel) : (ActionResult)this.View(viewModel);
         }
@@ -130,6 +131,7 @@ namespace Joe.Web.Mvc
         {
             try
             {
+                ViewBag.Create = true;
                 var viewModel = this.InitCreateModel();
                 viewModel.SetIDs(this.Decode(id.Split('/')));
                 return this.Request.IsAjaxRequest() ?

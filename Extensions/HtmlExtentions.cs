@@ -140,10 +140,16 @@ namespace Joe.Web.Mvc.Utility.Extensions
             if (ajax)
                 prevLink.MergeAttributes(ajaxAttributes);
 
-            String prevQueryString = String.Format("?take={0}&skip={1}", ViewBag.Take, previousStart) + html.GetCurrentOrderByQueryString() + html.GetCurrentWhereQueryString();
-            prevLink.Attributes.Add("href", url + prevQueryString);
             if (page == 0)
+            {
                 prev.Attributes.Add("class", "disabled");
+                prevLink.Attributes.Add("href", "#");
+            }
+            else
+            {
+                String prevQueryString = String.Format("?take={0}&skip={1}", ViewBag.Take, previousStart) + html.GetCurrentOrderByQueryString() + html.GetCurrentWhereQueryString();
+                prevLink.Attributes.Add("href", url + prevQueryString);
+            }
 
             prev.InnerHtml = prevLink.ToString();
 
@@ -153,11 +159,17 @@ namespace Joe.Web.Mvc.Utility.Extensions
             if (ajax)
                 nextLink.MergeAttributes(ajaxAttributes);
 
-            String nextQueryString = String.Format("?take={0}&skip={1}", ViewBag.Take, end) + html.GetCurrentOrderByQueryString() + html.GetCurrentWhereQueryString() + (appendQueryString.NotNull() ? "&" + appendQueryString : null);
-            nextLink.Attributes.Add("href", url + nextQueryString);
 
             if (count <= end)
+            {
                 next.Attributes.Add("class", "disabled");
+                nextLink.Attributes.Add("href", "#");
+            }
+            else
+            {
+                String nextQueryString = String.Format("?take={0}&skip={1}", ViewBag.Take, end) + html.GetCurrentOrderByQueryString() + html.GetCurrentWhereQueryString() + (appendQueryString.NotNull() ? "&" + appendQueryString : null);
+                nextLink.Attributes.Add("href", url + nextQueryString);
+            }
 
             next.InnerHtml = nextLink.ToString();
 
@@ -520,8 +532,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
             var updateTargetID = html.ViewContext.HttpContext.Request.QueryString["UpdateTargetId"];
             var tableID = updateTargetID ?? Guid.NewGuid().ToString().Replace("-", String.Empty);
             var container = new TagBuilder("div");
-
-
+            var memeberExpression = propertyExpression.Body as MemberExpression;
 
             if (!html.ViewContext.HttpContext.Request.IsAjaxRequest())
             {
@@ -549,7 +560,8 @@ namespace Joe.Web.Mvc.Utility.Extensions
                         //data_ajax_update = "#" + createContainerID,
                         data_toggle = "modal",
                         data_target = "#" + modalContainerID,
-                        data_backdrop = "false"
+                        data_backdrop = "false",
+                        id = "create" + (memeberExpression.NotNull() ? memeberExpression.Member.Name : "null")
                     }).ToString();
 
                 return new MvcHtmlString(container.ToString());
@@ -615,8 +627,8 @@ namespace Joe.Web.Mvc.Utility.Extensions
             }
 
             var properties = typeof(TValue).GetProperties().Where(prop =>
-              prop.PropertyType.IsSimpleType()
-              && !prop.Name.ToLower().EndsWith("id")
+              (prop.PropertyType.IsSimpleType() || columns.Contains(prop.Name))
+              && (!prop.Name.ToLower().EndsWith("id") || columns.Contains(prop.Name))
               && (columns.Count() == 0 || columns.Contains(prop.Name) || crudPropertyNames.Contains(prop.Name))
               && prop.Name != "Included");
 
@@ -684,7 +696,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
                         headerText = displayAttribute.GetName();
                         hasResource = false;
                     }
-                    else if (resourceProvider.GetResource(property.Name, property.DeclaringType.Name) != property.Name)
+                    else if (resourceProvider != null && resourceProvider.GetResource(property.Name, property.DeclaringType.Name) != property.Name)
                     {
                         headerText = resourceProvider.GetResource(property.Name, property.DeclaringType.Name);
                         hasResource = true;
@@ -724,11 +736,16 @@ namespace Joe.Web.Mvc.Utility.Extensions
                 //Build table
 
                 //If Table is paged then show Paged Records
-                count = items.Count(); ;
-                if (page)
+                if (html.ViewBag.Count == null)
                 {
-                    items = items.Take(takeInt);
+                    count = items.Count();
+                    if (page)
+                    {
+                        items = items.Take(takeInt);
+                    }
                 }
+                else
+                    count = html.ViewBag.Count;
                 foreach (var item in items)
                 {
                     var canUpdate = canUpdateInfo.NotNull() ? (Boolean)canUpdateInfo.GetValue(item, null) : true;
@@ -748,6 +765,8 @@ namespace Joe.Web.Mvc.Utility.Extensions
                             if (value != null)
                                 if (value is DateTime)
                                     cell.InnerHtml = ((DateTime)value).ToShortDateString();
+                                else if (!property.PropertyType.IsSimpleType())
+                                    cell.InnerHtml = html.DisplayFor(model => value).ToString();
                                 else
                                     cell.InnerHtml = value.ToString();
                             row.InnerHtml += cell.ToString();
@@ -790,7 +809,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
 
                         var pullLeftSpan = new TagBuilder("span");
                         pullLeftSpan.AddCssClass("pull-right");
-                        pullLeftSpan.InnerHtml = (isAjax ? (canUpdate ? editLink.ToString() : editLink.InnerHtml) + " | " : String.Empty) + (canUpdate ? fullEdit.ToString() : fullEdit.InnerHtml) + " | " + (canDelete ? deleteLink.ToString() : deleteLink.InnerHtml) + (showDetails ? " | " + (canRead ? printView.ToString() : printView.InnerHtml) : String.Empty);
+                        pullLeftSpan.InnerHtml = (isAjax ? (canUpdate ? editLink.ToString() : editLink.InnerHtml) + " | " : String.Empty) + (canUpdate ? fullEdit.ToString() : fullEdit.InnerHtml) + (showDetails ? " | " + (canRead ? printView.ToString() : printView.InnerHtml) : String.Empty) + " | " + (canDelete ? deleteLink.ToString() : deleteLink.InnerHtml);
                         row.InnerHtml += new TagBuilder("td") { InnerHtml = pullLeftSpan.ToString() };
                     }
                     else if (showDetails)
@@ -972,7 +991,9 @@ namespace Joe.Web.Mvc.Utility.Extensions
         public static String GetGlobalResource(this String name)
         {
             var resourceProvider = Joe.Business.Resource.ResourceProvider.ProviderInstance;
-            return resourceProvider.GetResource(name, "Global");
+            if (resourceProvider != null)
+                return resourceProvider.GetResource(name, "Global");
+            return name;
         }
 
         #endregion

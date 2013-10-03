@@ -65,7 +65,7 @@
     </Reference>
     <Reference Include="Joe.Business, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Business.1.0.4.21-beta\lib\net40\Joe.Business.dll</HintPath>
+      <HintPath>packages\Joe.Business.1.0.4.58-beta\lib\net40\Joe.Business.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Caching, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -76,11 +76,11 @@
     </Reference>
     <Reference Include="Joe.Map, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Map.1.0.3.12-beta\lib\net40\Joe.Map.dll</HintPath>
+      <HintPath>packages\Joe.Map.1.0.3.18-beta\lib\net40\Joe.Map.dll</HintPath>
     </Reference>
     <Reference Include="Joe.MapBack, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.MapBack.1.0.0.11-beta\lib\net40\Joe.MapBack.dll</HintPath>
+      <HintPath>packages\Joe.MapBack.1.0.0.16-beta\lib\net40\Joe.MapBack.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Reflection, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
