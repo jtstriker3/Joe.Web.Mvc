@@ -87,7 +87,7 @@ namespace Joe.Web.Mvc
                         foreach (var prop in reportGenericType.GetProperties())
                         {
                             var displayAttribute = prop.GetCustomAttributes(typeof(DisplayAttribute), true).SingleOrDefault() as DisplayAttribute;
-                            if (displayAttribute.GetAutoGenerateField().HasValue && !displayAttribute.GetAutoGenerateField().Value)
+                            if (displayAttribute != null && displayAttribute.GetAutoGenerateField().HasValue && !displayAttribute.GetAutoGenerateField().Value)
                             {
                                 var field = doddleReport.DataFields[prop.Name];
                                 if (field.NotNull())
