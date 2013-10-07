@@ -398,7 +398,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
            where TModel : ReportFilter
         {
             var placeholder = filter.DisplayAttribute != null ? filter.DisplayAttribute.Name : filter.PropertyName;
-            if (!filter.IsListFilter)
+            if (!filter.IsListFilter && !filter.IsValueFilter)
                 if (typeof(DateTime).IsAssignableFrom(filter.FilterType))
                 {
                     return html.TextBoxFor(model => model.Value, null, new { @class = "date", placeholder = placeholder });

@@ -9,10 +9,13 @@ using DoddleReport;
 using DoddleReport.Web;
 using Joe.Web.Mvc.Utility.Extensions;
 using Joe.Map;
+using System.ComponentModel.DataAnnotations;
+using Joe.MapBack;
 
 namespace Joe.Web.Mvc
 {
     public abstract class ReportController<TRepository> : Controller
+        where TRepository : IDBViewContext, new()
     {
         //
         // GET: /Report/
@@ -30,7 +33,7 @@ namespace Joe.Web.Mvc
             if (report.Single)
                 report.SingleChoices = reportRepo.GetSingleList<TRepository>(report);
             foreach (var filter in report.Filters)
-                if (filter.IsListFilter)
+                if (filter.IsListFilter || filter.IsValueFilter)
                     filter.ListValues = reportRepo.GetFilterValues<TRepository>(filter);
             return this.Request.IsAjaxRequest() ? PartialView(report) : (ActionResult)View(report);
         }
@@ -78,6 +81,21 @@ namespace Joe.Web.Mvc
                     if (!isNotHtml && (!report.Filters.NotNull() || report.Filters.Count() == 0))
                         doddleReport.TextFields.Header = "&nbsp;";
 
+                    if (ienumerableResult.GetType().ImplementsIEnumerable())
+                    {
+                        var reportGenericType = ienumerableResult.GetType().GetGenericArguments().Last();
+                        foreach (var prop in reportGenericType.GetProperties())
+                        {
+                            var displayAttribute = prop.GetCustomAttributes(typeof(DisplayAttribute), true).SingleOrDefault() as DisplayAttribute;
+                            if (displayAttribute.GetAutoGenerateField().HasValue && !displayAttribute.GetAutoGenerateField().Value)
+                            {
+                                var field = doddleReport.DataFields[prop.Name];
+                                if (field.NotNull())
+                                    field.Hidden = true;
+                            }
+                        }
+                    }
+
                     doddleReport.Source = ienumerableResult.ToReportSource();
                 }
                 else
@@ -109,6 +127,7 @@ namespace Joe.Web.Mvc
                             if (useFilterField.NotNull())
                                 useFilterField.Hidden = true;
                         }
+
                 var idField = doddleReport.DataFields["ID"]
                     ?? doddleReport.DataFields["Id"]
                     ?? doddleReport.DataFields["id"];
