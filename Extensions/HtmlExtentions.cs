@@ -186,8 +186,11 @@ namespace Joe.Web.Mvc.Utility.Extensions
 
         public static MvcHtmlString SortFor<TModel, TProperty>(this HtmlHelper<IEnumerable<TModel>> html, Expression<Func<TModel, TProperty>> expression, String updateID = null, String url = null)
         {
+            var headerText = html.DisplayNameFor(expression).ToString();
+
             var name = ((MemberExpression)expression.Body).Member.Name;
-            return SortFor(html, name, updateID, url);
+
+            return SortFor(html, name, updateID, url, headerText);
         }
 
         public static MvcHtmlString SortFor(this HtmlHelper html, String expression, String updateID = null, String url = null, String headerText = null, String additionalQueryStringValues = null)
@@ -398,28 +401,54 @@ namespace Joe.Web.Mvc.Utility.Extensions
            where TModel : ReportFilter
         {
             var placeholder = filter.DisplayAttribute != null ? filter.DisplayAttribute.Name : filter.PropertyName;
+            String returnString;
             if (!filter.IsListFilter && !filter.IsValueFilter)
                 if (typeof(DateTime).IsAssignableFrom(filter.FilterType))
                 {
-                    return html.TextBoxFor(model => model.Value, null, new { @class = "date", placeholder = placeholder });
+                    Object attributes;
+
+                    if (filter.IsOptional())
+                        attributes = new { @class = "date form-control", placeholder = placeholder };
+                    else
+                        attributes = new { @class = "date form-control", placeholder = placeholder, data_val = "true", data_val_required = String.Format("The {0} field is required.", placeholder) };
+                    returnString = html.TextBoxFor(model => model.Value, null, attributes).ToString();
                 }
                 else if (typeof(Boolean).IsAssignableFrom(filter.FilterType))
                 {
                     TagBuilder label = new TagBuilder("label");
                     label.AddCssClass("checkbox");
                     label.InnerHtml = html.CheckBox("Value").ToString() + placeholder;
-                    return new MvcHtmlString(label.ToString());
+                    returnString = label.ToString();
                 }
                 else
                 {
-                    return html.TextBoxFor(model => model.Value, new { placeholder = placeholder });
+                    Object attributes;
+                    if (filter.IsOptional())
+                        attributes = new { @class = "form-control", placeholder = placeholder };
+                    else
+                        attributes = new { @class = "form-control", placeholder = placeholder, data_val = "true", data_val_required = String.Format("The {0} field is required.", placeholder) };
+                    returnString = html.TextBoxFor(model => model.Value, attributes).ToString();
                 }
             else
-                return html.DropDownListFor(model => model.Value, filter.ListValues.Cast<Object>().ToSelectList(
+            {
+                Object attributes;
+                if (filter.IsOptional())
+                    attributes = new { @class = "chosen form-control", placeholder = placeholder, data_placeholder = placeholder };
+                else
+                    attributes = new { @class = "chosen form-control", placeholder = placeholder, data_placeholder = placeholder, data_val = "true", data_val_required = String.Format("The {0} field is required.", placeholder) };
+
+                returnString = html.DropDownListFor(model => model.Value, filter.ListValues.Cast<Object>().ToSelectList(
                     item => filter.ValueProperty.NotNull() ? Joe.Reflection.ReflectionHelper.GetEvalProperty(item, filter.ValueProperty) : item.GetIDs().BuildIDList(),
                     item => item.ConcatDisplayProperties(filter.DisplayProperties), null), String.Empty,
-                    new { @class = "chosen", placeholder = placeholder, data_placeholder = placeholder });
+                    attributes).ToString();
+            }
 
+            if (!filter.IsOptional())
+            {
+                returnString += html.ValidationMessageFor(model => model.Value).ToString();
+            }
+
+            return new MvcHtmlString(returnString);
             //if (typeof(String).IsAssignableFrom(filter.FilterType)
             //   || typeof(int).IsAssignableFrom(filter.FilterType)
             //   || typeof(int?).IsAssignableFrom(filter.FilterType)
@@ -712,9 +741,25 @@ namespace Joe.Web.Mvc.Utility.Extensions
                         hasResource = false;
                     }
 
-                    header.Attributes.Add("data-property", property.Name);
-                    header.Attributes.Add("data-placeholder", headerText);
-                    header.Attributes.Add("data-property-type", property.PropertyType.Name);
+                    if (property.PropertyType.IsSimpleType())
+                    {
+                        header.Attributes.Add("data-property", property.Name);
+                        header.Attributes.Add("data-placeholder", headerText);
+                        header.Attributes.Add("data-property-type", property.PropertyType.Name);
+                    }
+                    //If Class check to see if it has a display column and use that to filter by else do not Filter
+                    else
+                    {
+                        var displayColumnAttribute = property.GetCustomAttributes(typeof(DisplayColumnAttribute), true).SingleOrDefault() as DisplayColumnAttribute;
+                        if (displayColumnAttribute.NotNull())
+                        {
+                            header.Attributes.Add("data-property", property.Name + "." + displayColumnAttribute.DisplayColumn);
+                            header.Attributes.Add("data-placeholder", headerText);
+                            header.Attributes.Add("data-property-type", property.PropertyType.Name);
+                        }
+                    }
+
+
 
                     if (sortable)
                         header.InnerHtml = html.SortFor(property.Name, (isAjax ? "#" + id : null), urlHelper.Action("index", controllerName), headerText, sortQueryString).ToString() + GenerateResourceLink(hasResource, html, property.Name, property.DeclaringType.Name);

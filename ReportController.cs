@@ -81,6 +81,9 @@ namespace Joe.Web.Mvc
                     if (!isNotHtml && (!report.Filters.NotNull() || report.Filters.Count() == 0))
                         doddleReport.TextFields.Header = "&nbsp;";
 
+
+                    doddleReport.Source = ienumerableResult.ToReportSource();
+
                     if (ienumerableResult.GetType().ImplementsIEnumerable())
                     {
                         var reportGenericType = ienumerableResult.GetType().GetGenericArguments().Last();
@@ -96,7 +99,7 @@ namespace Joe.Web.Mvc
                         }
                     }
 
-                    doddleReport.Source = ienumerableResult.ToReportSource();
+
                 }
                 else
                 {
@@ -118,15 +121,15 @@ namespace Joe.Web.Mvc
                 doddleReport.TextFields.Header += Environment.NewLine + "<b>Filters</b><br/>" + report.Filters.BuildFilterHeading();
                 if (reportFromView.Filters.NotNull())
                     foreach (var filter in reportFromView.Filters)
-                        if (!filter.IsListFilter)
-                        {
-                            var field = doddleReport.DataFields[filter.PropertyName];
-                            var useFilterField = doddleReport.DataFields[filter.PropertyName + "Active"];
-                            if (field.NotNull())
-                                field.Hidden = true;
-                            if (useFilterField.NotNull())
-                                useFilterField.Hidden = true;
-                        }
+                    {
+                        var field = doddleReport.DataFields[filter.PropertyName];
+                        var useFilterField = doddleReport.DataFields[filter.PropertyName + "Active"];
+                        if (field.NotNull())
+                            field.Hidden = true;
+                        if (useFilterField.NotNull())
+                            useFilterField.Hidden = true;
+                    }
+
 
                 var idField = doddleReport.DataFields["ID"]
                     ?? doddleReport.DataFields["Id"]

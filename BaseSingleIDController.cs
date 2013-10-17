@@ -49,18 +49,28 @@ namespace Joe.Web.Mvc
         public virtual ActionResult Index(String filter)
         {
             string filterString = null;
-            if (!String.IsNullOrWhiteSpace(filter))
+            try
             {
-                foreach (var filterProp in Options.FilterProperties)
+                if (!String.IsNullOrWhiteSpace(filter))
                 {
-                    foreach (var search in filter.Split('|'))
+                    var requestProperties = this.Request.QueryString["filterProperties"];
+                    var filterProperties = requestProperties.NotNull() ? requestProperties.Split(',') : Options.FilterProperties;
+                    foreach (var filterProp in filterProperties)
                     {
-                        if (!filterString.NotNull())
-                            filterString = filterProp + ":Contains:" + search.Trim();
-                        else
-                            filterString += ":or:" + filterProp + ":Contains:" + search.Trim();
+                        foreach (var search in filter.Split('|'))
+                        {
+                            var operation = typeof(TViewModel).GetProperty("filterProp").PropertyType.IsValueType ? ":=:" : ":Contains:";
+                            if (!filterString.NotNull())
+                                filterString = filterProp + operation + search.Trim();
+                            else
+                                filterString += ":or:" + filterProp + operation + search.Trim();
+                        }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error Generating Filter String. Please Make sure All Properties sepcified in MVCOptions are Valid", ex);
             }
             return Index(null, filterString: filterString);
         }
