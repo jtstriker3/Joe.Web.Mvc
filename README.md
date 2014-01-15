@@ -114,5 +114,5 @@ public class SecurityProvider : Joe.Security.ISecurityProvider
 Aside from your Razor Views this is all the code you would need to Generate CRUD methods for a Person.
 
 ####Coming Soon
-I have some code generation (T4 Templates) that I have written that will examn your Context and Generate Repositorys, ViewModels including AllValues Properties and Controllers and Views For you.
+I have some code generation (T4 Templates) that I have written that will examen your Context and Generate Repositories, ViewModels including AllValues Properties and Controllers and Views For you.
 A little bit more polishing and will publish them
