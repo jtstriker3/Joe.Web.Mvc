@@ -55,36 +55,38 @@
     </Reference>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\EntityFramework.6.0.0-rc1\lib\net40\EntityFramework.dll</HintPath>
+      <HintPath>packages\EntityFramework.6.0.1\lib\net40\EntityFramework.dll</HintPath>
     </Reference>
-    <Reference Include="EntityFramework.SqlServer">
-      <HintPath>packages\EntityFramework.6.0.0-rc1\lib\net40\EntityFramework.SqlServer.dll</HintPath>
+    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>packages\EntityFramework.6.0.1\lib\net40\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
     <Reference Include="itextsharp">
       <HintPath>..\..\..\Sites\WendelPoultryAdmin\trunk\packages\DoddleReport.iTextSharp.1.4\lib\net40\itextsharp.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Business, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Business.1.0.4.65-beta\lib\net40\Joe.Business.dll</HintPath>
+      <HintPath>packages\Joe.Business.1.0.5.7\lib\net40\Joe.Business.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Caching, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>packages\Joe.Caching.1.0.1\lib\net40\Joe.Caching.dll</HintPath>
     </Reference>
-    <Reference Include="Joe.Init">
-      <HintPath>packages\Joe.Init.1.0.0.2\lib\net40\Joe.Init.dll</HintPath>
+    <Reference Include="Joe.Init, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>packages\Joe.Init.1.0.0.3\lib\net40\Joe.Init.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Map, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Map.1.0.3.20-beta\lib\net40\Joe.Map.dll</HintPath>
+      <HintPath>packages\Joe.Map.1.0.4.8\lib\net40\Joe.Map.dll</HintPath>
     </Reference>
     <Reference Include="Joe.MapBack, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.MapBack.1.0.0.16-beta\lib\net40\Joe.MapBack.dll</HintPath>
+      <HintPath>packages\Joe.MapBack.1.0.1.1\lib\net40\Joe.MapBack.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Reflection, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Reflection.1.0.2\lib\net40\Joe.Reflection.dll</HintPath>
+      <HintPath>packages\Joe.Reflection.1.0.4\lib\net40\Joe.Reflection.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Security, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -189,7 +191,7 @@
     <Compile Include="BaseErrorController.cs" />
     <Compile Include="BaseManyToManyApiController.cs" />
     <Compile Include="BaseManyToManyController.cs" />
-    <Compile Include="BaseSingleIDController.cs" />
+    <Compile Include="RepositoryController.cs" />
     <Compile Include="ConfigurationOptionsAttribute.cs" />
     <Compile Include="Configuration\ConfigurationHelper.cs" />
     <Compile Include="ControllerDisplayAttribute.cs" />

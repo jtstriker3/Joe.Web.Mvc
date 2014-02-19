@@ -11,8 +11,9 @@ using Joe.Web.Mvc.Utility.Session;
 using Joe.MapBack;
 namespace Joe.Web.Mvc
 {
+    [Obsolete("The RepositoryController will now work with multiple IDs. To Use change your route id parameter to have a catch all for id i.e. {*id}")]
     public abstract class BaseManyToManyController<TModel, TViewModel, TRelationModel1, TRelationModel2, TRelationView1, TRelationView2, TRepository>
-        : BaseSingleIDController<TModel, TViewModel, TRepository>
+        : RepositoryController<TModel, TViewModel, TRepository>
         where TModel : class, new()
         where TViewModel : class, IManyToMany, new()
         where TRelationView1 : class,  new()
@@ -83,7 +84,7 @@ namespace Joe.Web.Mvc
             }
         }
 
-        public ActionResult Create(string id)
+        public override ActionResult Create(string id)
         {
             try
             {

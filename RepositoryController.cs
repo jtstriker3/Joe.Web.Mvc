@@ -11,13 +11,27 @@ using System.Linq.Expressions;
 using Joe.Web.Mvc.Utility.Extensions;
 using Joe.MapBack;
 using Joe.Reflection;
+using System.ComponentModel;
 
 namespace Joe.Web.Mvc
 {
-    public abstract class BaseSingleIDController<TModel, TViewModel, TRepository> : BaseController
-        where TModel : class, new()
+    [Obsolete("This class is obsolete. It is just a place holder for legacy code. Please Inherit from RepositoryController")]
+    public abstract class BaseSingleIDController<TModel, TViewModel, TRepository> : RepositoryController<TModel, TViewModel, TRepository>
+        where TModel : class
         where TViewModel : class, new()
-        where TRepository : class, IDBViewContext, new()
+        where TRepository : IDBViewContext, new()
+    {
+        public BaseSingleIDController(IRepository<TModel, TViewModel, TRepository> repository)
+            : base(repository)
+        {
+
+        }
+    }
+
+    public abstract class RepositoryController<TModel, TViewModel, TRepository> : BaseController
+        where TModel : class
+        where TViewModel : class, new()
+        where TRepository : IDBViewContext, new()
     {
         protected MvcOptionsAttribute Options { get; set; }
         public IRepository<TModel, TViewModel, TRepository> Repository { get; set; }
@@ -27,8 +41,8 @@ namespace Joe.Web.Mvc
         public GetListDelegate ViewModelListRetrived;
 
 
-        public BaseSingleIDController(IRepository<TModel, TViewModel, TRepository> businessObject)
-            : base(businessObject)
+        public RepositoryController(IRepository<TModel, TViewModel, TRepository> repository)
+            : base(repository)
         {
             Options = (MvcOptionsAttribute)GetType().GetCustomAttributes(typeof(MvcOptionsAttribute), true).SingleOrDefault() ?? new MvcOptionsAttribute();
 
@@ -37,7 +51,7 @@ namespace Joe.Web.Mvc
             ViewBag.ShowCreate = Options.ShowCreate;
             ViewBag.Create = false;
 
-            Repository = businessObject;
+            Repository = repository;
         }
 
         public virtual ActionResult Index()
@@ -59,7 +73,8 @@ namespace Joe.Web.Mvc
                     {
                         foreach (var search in filter.Split('|'))
                         {
-                            var operation = typeof(TViewModel).GetProperty("filterProp").PropertyType.IsValueType ? ":=:" : ":Contains:";
+                            var propertyType = typeof(TViewModel).GetProperty(filterProp).PropertyType;
+                            var operation = propertyType.IsValueType ? ":=:" : ":Contains:";
                             if (!filterString.NotNull())
                                 filterString = filterProp + operation + search.Trim();
                             else
@@ -158,6 +173,7 @@ namespace Joe.Web.Mvc
         {
             try
             {
+                ViewBag.Create = true;
                 if (this.ModelState.IsValid)
                 {
                     viewModel = this.Repository.Create(viewModel);
@@ -185,7 +201,7 @@ namespace Joe.Web.Mvc
 
                 if (Request.QueryString["Success"] == "True")
                     ViewBag.Success = true;
-                return Request.IsAjaxRequest() ? PartialView(viewModel) : (ActionResult)this.View(viewModel);
+                return this.GetEditResult(viewModel);
             }
             catch (Exception ex)
             {
@@ -203,6 +219,8 @@ namespace Joe.Web.Mvc
                 {
                     viewModel = this.Repository.Update(viewModel);
                     ViewBag.Success = true;
+                    if (Options.ClearModelState)
+                        this.ModelState.Clear();
                     return EditResult(viewModel);
                 }
                 else
@@ -212,6 +230,9 @@ namespace Joe.Web.Mvc
             }
             catch (Exception ex)
             {
+                TViewModel errorModel;
+                if (this.TryGetModelOnError(out errorModel, viewModel.GetIDs().ToArray()))
+                    viewModel = errorModel;
                 return Error(ex, Options, viewModel);
             }
         }
@@ -306,23 +327,56 @@ namespace Joe.Web.Mvc
             return Request.IsAjaxRequest() ? PartialView(viewModel) : (ActionResult)this.View(viewModel);
         }
 
+        protected virtual ActionResult GetEditResult(TViewModel viewModel)
+        {
+            return Request.IsAjaxRequest() ? PartialView(viewModel) : (ActionResult)this.View(viewModel);
+        }
+
         protected virtual TViewModel InitCreateModel()
         {
             var viewModel = new TViewModel();
+            SetValuesFromQueryString(viewModel);
+
+            viewModel = this.Repository.Default(viewModel);
+            this.Repository.MapRepoFunction(viewModel, false);
+            return viewModel;
+
+        }
+
+        protected void SetValuesFromQueryString(TViewModel viewModel)
+        {
             var set = Convert.ToString(Request.QueryString["set"]);
             if (!String.IsNullOrEmpty(set))
             {
                 var propList = set.Split(':');
                 for (int i = 0; i < propList.Length; i = i + 2)
                 {
-                    Joe.Reflection.ReflectionHelper.SetEvalProperty(viewModel, propList[i], propList[i + 1]);
+                    var info = Joe.Reflection.ReflectionHelper.GetEvalPropertyInfo(typeof(TViewModel), propList[i]);
+                    Object value = null;
+                    if (typeof(int?).IsAssignableFrom(info.PropertyType))
+                        value = int.Parse(propList[i + 1]);
+                    else
+                        value = propList[i + 1];
+                    Joe.Reflection.ReflectionHelper.SetEvalProperty(viewModel, propList[i], value);
                 }
             }
+        }
 
-            viewModel = this.Repository.Default(viewModel);
-            this.Repository.MapRepoFunction(viewModel, false);
-            return viewModel;
+        protected Boolean TryGetModelOnError(out TViewModel viewModel, params Object[] ids)
+        {
+            Boolean success = false;
+            viewModel = null;
+            try
+            {
+                viewModel = this.Repository.Get(ids);
+                success = true;
+            }
+            catch
+            {
+                success = false;
+            }
 
+            return success;
         }
 
     }

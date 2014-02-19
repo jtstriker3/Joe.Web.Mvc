@@ -9,6 +9,9 @@ namespace Joe.Web.Mvc
     {
         public Boolean Hide { get; set; }
         public String Name { get; set; }
+        public String Group { get; set; }
+        public int Order { get; set; }
+        public String HelpMessage { get; set; }
 
         public ControllerDisplayAttribute(String name)
             : this(name, false)
@@ -26,6 +29,7 @@ namespace Joe.Web.Mvc
         {
             Name = name;
             Hide = hide;
+            Order = 999;
         }
     }
 }

@@ -85,7 +85,12 @@ namespace Joe.Web.Mvc.Utility.Extensions
             foreach (var item in list)
             {
                 var valueString = value.Compile().Invoke(item).ToString();
-                var textString = text.Compile().Invoke(item).ToString();
+                var textValue = text.Compile().Invoke(item);
+                String textString = null;
+                if (textValue.NotNull())
+                    textString = textValue.ToString();
+                else
+                    textString = "NULL";
                 selectList.Add(new SelectListItem() { Value = valueString, Text = textString, Selected = valueString == (selected.NotNull() ? selected.ToString() : String.Empty) });
             }
 
@@ -302,6 +307,41 @@ namespace Joe.Web.Mvc.Utility.Extensions
                 count++;
             }
             return filterString;
+        }
+
+        public static Boolean IsNumericType(this Type type)
+        {
+            return type == typeof(System.Byte)
+                || type == typeof(System.Byte)
+                || type == typeof(System.Byte?)
+                || type == typeof(System.Int32)
+                || type == typeof(System.Int32?)
+                || type == typeof(System.UInt32)
+                || type == typeof(System.UInt32?)
+                || type == typeof(System.Int16)
+                || type == typeof(System.Int16?)
+                || type == typeof(System.UInt16)
+                || type == typeof(System.UInt16?)
+                || type == typeof(System.Int64)
+                || type == typeof(System.Int64?)
+                || type == typeof(System.UInt64)
+                || type == typeof(System.UInt64?)
+                || type == typeof(System.Double)
+                || type == typeof(System.Double?)
+                || type == typeof(System.Decimal)
+                || type == typeof(System.Decimal?);
+        }
+
+        public static JsonResult AjaxAction(this Controller controller, AjaxActionData ajaxAction)
+        {
+            controller.Response.AddHeader("X-AjaxAction", "true");
+            return new JsonResult() { Data = ajaxAction };
+        }
+
+        public static JsonResult AjaxAction(this Controller controller, AjaxActionData ajaxAction, JsonRequestBehavior requestBehavior)
+        {
+            controller.Response.AddHeader("X-AjaxAction", "true");
+            return new JsonResult() { Data = ajaxAction, JsonRequestBehavior = requestBehavior };
         }
     }
 }

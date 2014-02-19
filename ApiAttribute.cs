@@ -107,6 +107,7 @@ namespace Joe.Web.Mvc
                                     }
 
                                     actionExecutedContext.Response = actionExecutedContext.Request.CreateResponse(HttpStatusCode.OK, viewModelList.TryCast(genericType));
+                                    actionExecutedContext.Response.Headers.Add("X-Total-Count", count);
                                 }
                                 else
                                 {
@@ -114,9 +115,11 @@ namespace Joe.Web.Mvc
                                         ((IBusinessController)controller).BaseRepository.SetCrud(viewModel, true);
 
                                     ((ObjectContent)actionExecutedContext.Response.Content).Value = viewModelList.Where(filter).TryCast(genericType);
+                                    actionExecutedContext.Response.Headers.Remove("X-Total-Count");
+                                    actionExecutedContext.Response.Headers.Add("X-Total-Count", count);
                                 }
 
-                                actionExecutedContext.Response.Headers.Add("X-Total-Count", count);
+
                             }
                             else
                                 throw new Exception("Content value must be IEnumerable");

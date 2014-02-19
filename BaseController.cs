@@ -84,9 +84,9 @@ namespace Joe.Web.Mvc
             else if (ex is DbEntityValidationException)
             {
                 var exception = ex as DbEntityValidationException;
-                foreach (var error in exception.EntityValidationErrors.SelectMany(ev => ev.ValidationErrors.Select(ve => ve.ErrorMessage)))
+                foreach (var error in exception.EntityValidationErrors.SelectMany(ev => ev.ValidationErrors.Select(ve => ve)))
                 {
-                    this.ModelState.AddModelError(String.Empty, error);
+                    this.ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
                 }
             }
             else
@@ -185,12 +185,6 @@ namespace Joe.Web.Mvc
         protected ActionResult Error(Exception ex, MvcOptionsAttribute options = null, Object viewModel = null)
         {
             return Request.IsAjaxRequest() ? GetAjaxErrorResponse(ex, options, viewModel) : GetErrorResponse(ex, options, viewModel);
-        }
-
-        protected JsonResult AjaxAction(AjaxActionData ajaxAction)
-        {
-            Response.AddHeader("X-AjaxAction", "true");
-            return Json(ajaxAction);
         }
     }
 }

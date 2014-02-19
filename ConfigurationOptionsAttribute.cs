@@ -23,6 +23,7 @@ namespace Joe.Web.Mvc
         public int DefaultPageSize { get; set; }
         public IEnumerable<String> FilterProperties { get; set; }
         public Boolean URLEncodeKey { get; set; }
+        public Boolean ClearModelState { get; set; }
 
         public MvcOptionsAttribute(params String[] filterProperties)
         {
