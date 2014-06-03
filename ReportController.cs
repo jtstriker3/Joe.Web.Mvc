@@ -11,6 +11,9 @@ using Joe.Web.Mvc.Utility.Extensions;
 using Joe.Map;
 using System.ComponentModel.DataAnnotations;
 using Joe.MapBack;
+using DotNet.Highcharts.Options;
+using DotNet.Highcharts.Helpers;
+using DotNet.Highcharts.Enums;
 
 namespace Joe.Web.Mvc
 {
@@ -23,7 +26,7 @@ namespace Joe.Web.Mvc
         public ActionResult Index()
         {
             ReportRepository reportRepo = new ReportRepository();
-            return this.Request.IsAjaxRequest() ? PartialView(reportRepo.GetReports()) : (ActionResult)View(reportRepo.GetReports());
+            return this.Request.IsAjaxRequest() ? PartialView(FilterReports(reportRepo.GetReports())) : (ActionResult)View(FilterReports(reportRepo.GetReports()));
         }
 
         public ActionResult Filters(String id)
@@ -47,11 +50,15 @@ namespace Joe.Web.Mvc
             var isNotHtml = extension != null && !extension.ToString().ToLower().Contains("html");
             var reportFromView = reportRepo.GetReport(report.Name);
 
-            if (report.UiHint.NotNull())
+            if (report.Chart)
+            {
+                return GenerateChartReport(report, result);
+            }
+            else if (report.UiHint.NotNull())
             {
                 ViewBag.Title = report.Name;
                 ViewBag.Description = report.Description;
-                ViewBag.Filters = report.Filters.BuildFilterHeading();
+                ViewBag.Filters = report.Filters.BuildFilterHeading(true);
                 if (typeof(IEnumerable).IsAssignableFrom(result.GetType()))
                 {
                     var ienumerableResult = (IEnumerable)result;
@@ -141,5 +148,189 @@ namespace Joe.Web.Mvc
             }
         }
 
+        private ActionResult GenerateChartReport(Joe.Business.Report.Report report, object result)
+        {
+            var renderFunction = "renderReport" + report.Name.Replace(" ", String.Empty);
+            ViewBag.RenderFunction = renderFunction;
+            var chartTypeStr = this.Request.QueryString["ChartType"];
+            ViewBag.Filters = report.Filters.BuildFilterHeading(true);
+            if (typeof(IEnumerable).IsAssignableFrom(result.GetType()))
+            {
+
+                if (typeof(IChartPoint).IsAssignableFrom(report.ReportView))
+                {
+                    var iChartPoints = ((IEnumerable)result).Cast<IChartPoint>();
+
+                    var seriesData = iChartPoints.GroupBy(g => g.Series).Select(group => new Series
+                    {
+                        Name = group.Key.ToString(),
+                        Data = new Data(group.To2DimensionalArray()),
+                    }).ToArray();
+
+                    DotNet.Highcharts.Highcharts chart = new DotNet.Highcharts.Highcharts("chart")
+                                                                .InitChart(new Chart()
+                                                                {
+                                                                    Type = this.GetChartType(report),
+                                                                    ClassName = "chart",
+                                                                })
+                                                               .SetSeries(seriesData)
+                                                               .SetTitle(new Title() { Text = report.Name });
+                    chart.InFunction(renderFunction);
+                    //SetDefaultXAxis(iChartPoints, chart);
+                    return View("Chart", chart);
+                }
+                else if (typeof(IChartReport).IsAssignableFrom(report.ReportView))
+                {
+                    var resultEnumerable = ((IEnumerable)result).Cast<IChartReport>();
+                    var firstResult = resultEnumerable.FirstOrDefault();
+
+                    if (firstResult.NotNull())
+                    {
+                        var seriesData = resultEnumerable.Select(point =>
+                                         new Series()
+                                         {
+                                             Name = point.Series.ToString(),
+                                             Data = new Data(
+                                                 ((IEnumerable)point.Data).Cast<IPoint>().GroupBy(reportGrouping => reportGrouping.X)
+                                                 .Select(g => new ChartPoint() { Y = g.Sum(p => p.Y.ToDouble()), X = g.Key }).To2DimensionalArray())
+                                         }).ToArray();
+
+                        DotNet.Highcharts.Highcharts chart = new DotNet.Highcharts.Highcharts("chart")
+                                                                   .InitChart(new Chart()
+                                                                   {
+                                                                       Type = this.GetChartType(report),
+                                                                       ClassName = "chart",
+                                                                   })
+                                                                  .SetSeries(seriesData)
+                                                                  .SetTitle(new Title() { Text = report.Name });
+
+                        if (firstResult.XAxis.NotNull())
+                            chart.SetXAxis(new XAxis
+                            {
+                                Categories = firstResult.XAxis.ToArray()
+                            });
+                        else
+                        {
+                            var iChartPoints = resultEnumerable.SelectMany(r => r.Data.Cast<IChartPoint>());
+                            SetDefaultXAxis(iChartPoints, chart);
+                        }
+                        if (firstResult.YAxis.NotNull())
+                            chart.SetYAxis(new YAxis
+                            {
+                                Categories = firstResult.YAxis.ToArray()
+                            });
+                        chart.InFunction(renderFunction);
+
+                        return View("Chart", chart);
+                    }
+                }
+                return View("Chart");
+            }
+            else
+            {
+                if (result != null)
+                {
+                    var iChartReport = (IChartReport)result;
+                    DotNet.Highcharts.Highcharts chart = new DotNet.Highcharts.Highcharts("chart")
+                        .InitChart(new Chart()
+                        {
+                            Type = this.GetChartType(report),
+                            ClassName = "chart",
+                        });
+                    var series = new Series()
+                    {
+                        Name = iChartReport.Series.ToString(),
+                        Data = new Data(
+                            ((IEnumerable)iChartReport.Data).Cast<IPoint>().GroupBy(reportGrouping => reportGrouping.X)
+                            .Select(g => new ChartPoint() { Y = g.Sum(p => p.Y.ToDouble()), X = g.Key }).To2DimensionalArray())
+                    };
+                    chart.SetSeries(series);
+                    chart.SetTitle(new Title() { Text = report.Name });
+
+                    if (iChartReport.XAxis.NotNull())
+                        chart.SetXAxis(new XAxis
+                        {
+                            Categories = iChartReport.XAxis.ToArray()
+                        });
+                    else
+                    {
+                        SetDefaultXAxis(iChartReport.Data.Cast<IChartPoint>(), chart);
+                    }
+                    if (iChartReport.YAxis.NotNull())
+                        chart.SetYAxis(new YAxis
+                        {
+                            Categories = iChartReport.YAxis.ToArray()
+                        });
+                    chart.InFunction(renderFunction);
+
+                    return View("Chart", chart);
+                }
+
+                return View("Chart");
+            }
+        }
+
+        private void SetDefaultXAxis(IEnumerable<IPoint> iChartPoints, DotNet.Highcharts.Highcharts chart)
+        {
+            var xAxisList = iChartPoints.Where(p => p.X != null).Select(p => p.X.ToString()).Distinct().ToList();
+            if (xAxisList.Count > 0)
+            {
+                xAxisList.Sort();
+                chart.SetXAxis(new XAxis()
+                {
+                    Categories = xAxisList.ToArray()
+                });
+            }
+        }
+
+        public virtual IEnumerable<IReport> FilterReports(IEnumerable<IReport> reports)
+        {
+            return reports;
+        }
+
+        private DotNet.Highcharts.Enums.ChartTypes GetChartType(Joe.Business.Report.IReport report)
+        {
+            var chartTypeStr = this.Request.QueryString["ChartType"];
+            if (chartTypeStr != null)
+                switch (chartTypeStr.ToLower())
+                {
+                    case "bar":
+                        return DotNet.Highcharts.Enums.ChartTypes.Bar;
+                    case "pie":
+                        return DotNet.Highcharts.Enums.ChartTypes.Pie;
+                    case "scatter":
+                        return DotNet.Highcharts.Enums.ChartTypes.Scatter;
+                    case "line":
+                        return DotNet.Highcharts.Enums.ChartTypes.Line;
+                    case "bubble":
+                        return DotNet.Highcharts.Enums.ChartTypes.Bubble;
+                    case "spline":
+                        return DotNet.Highcharts.Enums.ChartTypes.Spline;
+                    case "area":
+                        return DotNet.Highcharts.Enums.ChartTypes.Area;
+                    case "areaspline":
+                        return DotNet.Highcharts.Enums.ChartTypes.Areaspline;
+                    case "arearange":
+                        return DotNet.Highcharts.Enums.ChartTypes.Arearange;
+                    case "areasplinerange":
+                        return DotNet.Highcharts.Enums.ChartTypes.Areasplinerange;
+                    case "columnrange":
+                        return DotNet.Highcharts.Enums.ChartTypes.Columnrange;
+                    case "funnel":
+                        return DotNet.Highcharts.Enums.ChartTypes.Funnel;
+                    case "guage":
+                        return DotNet.Highcharts.Enums.ChartTypes.Gauge;
+                    default:
+                        return DotNet.Highcharts.Enums.ChartTypes.Column;
+                }
+
+            return (DotNet.Highcharts.Enums.ChartTypes)Enum.Parse(typeof(DotNet.Highcharts.Enums.ChartTypes), report.ChartType.ToString());
+        }
+
+        private class ChartPoint : IPoint
+        {
+            public Object X { get; set; }
+            public Object Y { get; set; }
+        }
     }
 }

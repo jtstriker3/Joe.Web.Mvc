@@ -76,7 +76,7 @@ namespace Joe.Web.Mvc
             this.Delete(viewModel);
         }
 
-        [HttpPost]
+        [HttpDelete]
         public virtual void Delete(TViewModel viewModel)
         {
             try

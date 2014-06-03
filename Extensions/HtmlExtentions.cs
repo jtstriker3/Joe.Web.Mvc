@@ -15,6 +15,7 @@ using System.ComponentModel.DataAnnotations;
 using Joe.Business.Report;
 using Joe.Map;
 using System.Web.Mvc.Ajax;
+using System.Text.RegularExpressions;
 
 
 
@@ -591,6 +592,8 @@ namespace Joe.Web.Mvc.Utility.Extensions
                 routeValueDictionary.Add("UpdateTargetId", updateTargetID);
                 routeValueDictionary.Add("filter", filter);
 
+                htmlAttributesDictionary.CleanDataAttributes();
+
                 return new AjaxHelper(htmlHelper.ViewContext, htmlHelper.ViewDataContainer, htmlHelper.RouteCollection).BeginForm(
                     actionName,
                     controllerName,
@@ -1128,8 +1131,13 @@ namespace Joe.Web.Mvc.Utility.Extensions
             where TEnum : struct, IComparable, IFormattable, IConvertible
         {
             var values = from TEnum e in Enum.GetValues(typeof(TEnum))
-                         select new { Id = e, Name = e.ToString() };
+                         select new { Id = e, Name = e.ToString().CaseToSpace() };
             return new SelectList(values, "Id", "Name", enumObj);
+        }
+
+        public static String CaseToSpace(this String str)
+        {
+            return Regex.Replace(str, "(\\B[A-Z])", " $1");
         }
 
         public static String ToRoute(this IEnumerable routeList)

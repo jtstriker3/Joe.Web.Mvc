@@ -211,7 +211,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
             return ids;
         }
 
-        public static String BuildFilterHeading(this IEnumerable<IReportFilter> filters)
+        public static String BuildFilterHeading(this IEnumerable<IReportFilter> filters, bool html = false)
         {
             if (filters.NotNull())
             {
@@ -220,9 +220,28 @@ namespace Joe.Web.Mvc.Utility.Extensions
                 {
                     var display = filter.DisplayAttribute != null ? filter.DisplayAttribute.Name : filter.PropertyName;
                     if (filterHeader == null)
-                        filterHeader = display + ": " + filter.Value;
+
+                        if (html)
+                        {
+                            var div = new TagBuilder("div");
+                            var strong = new TagBuilder("strong");
+                            strong.InnerHtml = display + ": ";
+                            div.InnerHtml = strong.ToString() + filter.Value;
+                            filterHeader += div.ToString();
+                        }
+                        else
+                            filterHeader = display + ": " + filter.Value;
                     else
-                        filterHeader += Environment.NewLine + display + ": " + filter.Value;
+                        if (html)
+                        {
+                            var div = new TagBuilder("div");
+                            var strong = new TagBuilder("strong");
+                            strong.InnerHtml = display + ": ";
+                            div.InnerHtml = strong.ToString() + filter.Value;
+                            filterHeader += div.ToString();
+                        }
+                        else
+                            filterHeader += Environment.NewLine + display + ": " + filter.Value;
                 }
 
                 return filterHeader;
@@ -342,6 +361,27 @@ namespace Joe.Web.Mvc.Utility.Extensions
         {
             controller.Response.AddHeader("X-AjaxAction", "true");
             return new JsonResult() { Data = ajaxAction, JsonRequestBehavior = requestBehavior };
+        }
+
+        public static double ToDouble(this Object obj)
+        {
+            double value = 0;
+            double.TryParse(obj.ToString(), out value);
+            return value;
+        }
+
+        public static Object[,] To2DimensionalArray(this IEnumerable<IPoint> points)
+        {
+            var array = new Object[points.Count(), 2];
+            var count = 0;
+            foreach (var point in points)
+            {
+                array[count, 0] = point.X;
+                array[count, 1] = point.Y;
+                count++;
+            }
+
+            return array;
         }
     }
 }

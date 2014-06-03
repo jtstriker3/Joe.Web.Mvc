@@ -75,10 +75,17 @@ namespace Joe.Web.Mvc
                         {
                             var propertyType = typeof(TViewModel).GetProperty(filterProp).PropertyType;
                             var operation = propertyType.IsValueType ? ":=:" : ":Contains:";
-                            if (!filterString.NotNull())
-                                filterString = filterProp + operation + search.Trim();
-                            else
-                                filterString += ":or:" + filterProp + operation + search.Trim();
+
+                            Decimal outParse;
+                            var canParse = decimal.TryParse(search.Trim(), out outParse);
+
+                            if (!propertyType.IsValueType || canParse)
+                            {
+                                if (!filterString.NotNull())
+                                    filterString = filterProp + operation + search.Trim();
+                                else
+                                    filterString += ":or:" + filterProp + operation + search.Trim();
+                            }
                         }
                     }
                 }
@@ -107,7 +114,7 @@ namespace Joe.Web.Mvc
                     descending = Convert.ToBoolean(Request.QueryString["descending"]);
                     where = filterString ?? Convert.ToString(Request.QueryString["where"]);
                     int count;
-                    var viewModelList = this.Repository.Get(out count, filter, take.HasValue ? take : Options.DefaultPageSize, skip, descending: descending, orderBy: orderBy, stringFilter: where, dynamicFilter: dynamicFilters);
+                    var viewModelList = this.Repository.Get(out count, filter, take.HasValue ? take : Options.DefaultPageSize, skip, descending: descending, orderBy: orderBy, stringFilter: where, dynamicFilter: dynamicFilters, mapRepoFunctionsOverride: this.Options.MapRepoFunctionForList);
                     ViewBag.Count = count;
                     ViewBag.Take = take.HasValue ? take.Value : Options.DefaultPageSize;
                     ViewBag.Skip = skip.HasValue ? skip.Value : 0;
@@ -355,6 +362,8 @@ namespace Joe.Web.Mvc
                     Object value = null;
                     if (typeof(int?).IsAssignableFrom(info.PropertyType))
                         value = int.Parse(propList[i + 1]);
+                    else if (info.PropertyType.IsEnum)
+                        value = Enum.Parse(info.PropertyType, propList[i + 1]);
                     else
                         value = propList[i + 1];
                     Joe.Reflection.ReflectionHelper.SetEvalProperty(viewModel, propList[i], value);

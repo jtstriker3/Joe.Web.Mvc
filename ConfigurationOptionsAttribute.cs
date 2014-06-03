@@ -24,6 +24,7 @@ namespace Joe.Web.Mvc
         public IEnumerable<String> FilterProperties { get; set; }
         public Boolean URLEncodeKey { get; set; }
         public Boolean ClearModelState { get; set; }
+        public Boolean MapRepoFunctionForList { get; set; }
 
         public MvcOptionsAttribute(params String[] filterProperties)
         {
@@ -32,6 +33,7 @@ namespace Joe.Web.Mvc
             DefaultPageSize = 10;
             FilterProperties = filterProperties;
             URLEncodeKey = true;
+            MapRepoFunctionForList = true;
         }
     }
 }

@@ -77,7 +77,6 @@ namespace Joe.Web.Mvc
         {
             if (ex is ValidationException || ex is DbUnexpectedValidationException)
             {
-
                 var validationEx = ex as ValidationException;
                 this.ModelState.AddModelError(String.Empty, ex.Message);
             }
@@ -88,6 +87,8 @@ namespace Joe.Web.Mvc
                 {
                     this.ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
                 }
+
+                this.ModelState.AddModelError(String.Empty, ex.Message);
             }
             else
             {
