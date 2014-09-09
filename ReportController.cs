@@ -118,6 +118,23 @@ namespace Joe.Web.Mvc
                     doddleReport.TextFields.Header = result.BuildReportHeading(report.Filters);
                     doddleReport.Source = reportList.ToReportSource();
 
+                    if (reportList.Count() > 0)
+                    {
+                        var reportGenericType = reportList.First().GetType();
+                        foreach (var prop in reportGenericType.GetProperties())
+                        {
+                            var displayAttribute = prop.GetCustomAttributes(typeof(DisplayAttribute), true).SingleOrDefault() as DisplayAttribute;
+                            if (displayAttribute != null && displayAttribute.GetAutoGenerateField().HasValue && !displayAttribute.GetAutoGenerateField().Value)
+                            {
+                                var field = doddleReport.DataFields[prop.Name];
+                                if (field.NotNull())
+                                    field.Hidden = true;
+                            }
+                        }
+
+                    }
+
+
                     //foreach (var childReport in result.BuildChildReports())
                     //{
                     //    doddleReport.AppendReport(childReport);

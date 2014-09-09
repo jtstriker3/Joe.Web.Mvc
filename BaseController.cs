@@ -15,8 +15,6 @@ namespace Joe.Web.Mvc
 {
     public abstract class BaseController : Controller
     {
-        public static IErrorLogProvider ErrorLogger { get; set; }
-
         public IRepository BaseRepository { get; set; }
 
         public BaseController(IRepository baseRepository)
@@ -174,8 +172,8 @@ namespace Joe.Web.Mvc
         {
             try
             {
-                if (ErrorLogger.NotNull())
-                    ErrorLogger.LogError(ex);
+                if (ErrorLogger.LogProvider.NotNull())
+                    ErrorLogger.LogProvider.LogError(ex);
             }
             catch
             {
@@ -186,6 +184,14 @@ namespace Joe.Web.Mvc
         protected ActionResult Error(Exception ex, MvcOptionsAttribute options = null, Object viewModel = null)
         {
             return Request.IsAjaxRequest() ? GetAjaxErrorResponse(ex, options, viewModel) : GetErrorResponse(ex, options, viewModel);
+        }
+
+        protected virtual void AddWarningsToModelState(IEnumerable<ValidationWarning> warnings)
+        {
+            foreach (var warning in warnings)
+            {
+                this.ModelState.AddModelError(warning.PropertyName, warning.Message);
+            }
         }
     }
 }

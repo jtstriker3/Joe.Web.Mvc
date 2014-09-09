@@ -183,7 +183,10 @@ namespace Joe.Web.Mvc
                 ViewBag.Create = true;
                 if (this.ModelState.IsValid)
                 {
-                    viewModel = this.Repository.Create(viewModel);
+
+                    var result = this.Repository.Create(viewModel);
+                    viewModel = result.ViewModel;
+                    this.AddWarningsToModelState(result.Warnings);
                     return CreateResult(viewModel);
                 }
                 else
@@ -224,10 +227,13 @@ namespace Joe.Web.Mvc
 
                 if (this.ModelState.IsValid)
                 {
-                    viewModel = this.Repository.Update(viewModel);
+                    var result = this.Repository.Update(viewModel);
+                    viewModel = result.ViewModel;
                     ViewBag.Success = true;
                     if (Options.ClearModelState)
                         this.ModelState.Clear();
+                    //Must Be done after clearing of model state
+                    this.AddWarningsToModelState(result.Warnings);
                     return EditResult(viewModel);
                 }
                 else
@@ -371,7 +377,7 @@ namespace Joe.Web.Mvc
             }
         }
 
-        protected Boolean TryGetModelOnError(out TViewModel viewModel, params Object[] ids)
+        protected virtual Boolean TryGetModelOnError(out TViewModel viewModel, params Object[] ids)
         {
             Boolean success = false;
             viewModel = null;

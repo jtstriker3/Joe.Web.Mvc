@@ -35,21 +35,21 @@ namespace Joe.Web.Mvc.Utility.Extensions
             return obj != null;
         }
 
-        public static Nullable<T> ToNullable<T>(this string s) where T : struct
-        {
-            Nullable<T> result = new Nullable<T>();
-            try
-            {
-                if (!string.IsNullOrEmpty(s) && s.Trim().Length > 0)
-                {
-                    TypeConverter conv = TypeDescriptor.GetConverter(typeof(T));
-                    result = (T)conv.ConvertFrom(s);
-                }
-            }
-            catch
-            { }
-            return result;
-        }
+        //public static Nullable<T> ToNullable<T>(this string s) where T : struct
+        //{
+        //    Nullable<T> result = new Nullable<T>();
+        //    try
+        //    {
+        //        if (!string.IsNullOrEmpty(s) && s.Trim().Length > 0)
+        //        {
+        //            TypeConverter conv = TypeDescriptor.GetConverter(typeof(T));
+        //            result = (T)conv.ConvertFrom(s);
+        //        }
+        //    }
+        //    catch
+        //    { }
+        //    return result;
+        //}
 
         public static Boolean HasCrudProerties(this Object obj)
         {
@@ -99,8 +99,8 @@ namespace Joe.Web.Mvc.Utility.Extensions
 
         public static void LogError(this Exception ex)
         {
-            if (BaseController.ErrorLogger.NotNull())
-                BaseController.ErrorLogger.LogError(ex);
+            if (ErrorLogger.LogProvider.NotNull())
+                ErrorLogger.LogProvider.LogError(ex);
         }
 
         public static void CleanDataAttributes(this IDictionary<String, Object> dictionary)

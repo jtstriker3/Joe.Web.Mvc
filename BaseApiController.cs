@@ -38,36 +38,79 @@ namespace Joe.Web.Mvc
             AllowedFunctions = AllowedFunctions.All), SetCrud, MapRepoFunctions]
         public virtual IQueryable<TViewModel> Get()
         {
-            var viewModelList = this.Repository.Get(setCrudOverride: false, mapRepoFunctionsOverride: false);
-            if (ViewModelListRetrieved != null)
-                viewModelList = ViewModelListRetrieved(viewModelList);
+            try
+            {
+                var viewModelList = this.Repository.Get(setCrudOverride: false, mapRepoFunctionsOverride: false);
+                if (ViewModelListRetrieved != null)
+                    viewModelList = ViewModelListRetrieved(viewModelList);
 
-            return viewModelList;
+                return viewModelList;
+            }
+            catch (Exception ex)
+            {
+                this.LogError(ex);
+                throw ex;
+            }
         }
 
         public virtual TViewModel Get(String id)
         {
-            var viewModel = this.Repository.Get(id);
-            if (this.ViewModelRetrieved != null)
-                ViewModelRetrieved(viewModel, id);
-            return viewModel;
+            try
+            {
+                var viewModel = this.Repository.Get(id);
+                if (this.ViewModelRetrieved != null)
+                    ViewModelRetrieved(viewModel, id);
+                return viewModel;
+            }
+            catch (Exception ex)
+            {
+                this.LogError(ex);
+                throw ex;
+            }
         }
 
         public IQueryable<TViewModel> Put(List<TViewModel> viewModelList, Boolean List)
         {
-            return this.Repository.Update(viewModelList);
+            try
+            {
+                var results = this.Repository.Update(viewModelList);
+                return results.Select(result => result.ViewModel).AsQueryable();
+            }
+            catch (Exception ex)
+            {
+                this.LogError(ex);
+                throw ex;
+            }
         }
 
         [ValidActionFilter]
         public virtual TViewModel Put(TViewModel viewModel)
         {
-            return this.Repository.Update(viewModel);
+            try
+            {
+                var result = this.Repository.Update(viewModel);
+                return result.ViewModel;
+            }
+            catch (Exception ex)
+            {
+                this.LogError(ex);
+                throw ex;
+            }
         }
 
         [ValidActionFilter]
         public virtual TViewModel Post(TViewModel viewModel)
         {
-            return this.Repository.Create(viewModel);
+            try
+            {
+                var result = this.Repository.Create(viewModel);
+                return result.ViewModel;
+            }
+            catch (Exception ex)
+            {
+                this.LogError(ex);
+                throw ex;
+            }
         }
 
         public virtual void Delete(string id)
@@ -85,6 +128,7 @@ namespace Joe.Web.Mvc
             }
             catch (Exception ex)
             {
+                this.LogError(ex);
                 throw ex;
             }
         }
@@ -93,6 +137,12 @@ namespace Joe.Web.Mvc
         {
             this.Repository.Dispose();
             base.Dispose(disposing);
+        }
+
+        protected void LogError(Exception ex)
+        {
+            if (ErrorLogger.LogProvider != null)
+                ErrorLogger.LogProvider.LogError(ex);
         }
 
     }

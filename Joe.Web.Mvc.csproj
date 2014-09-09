@@ -56,52 +56,46 @@
     <Reference Include="DotNet.Highcharts">
       <HintPath>packages\DotNet.Highcharts.2.0\lib\DotNet.Highcharts.dll</HintPath>
     </Reference>
-    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\EntityFramework.6.0.1\lib\net40\EntityFramework.dll</HintPath>
+    <Reference Include="EntityFramework">
+      <HintPath>packages\EntityFramework.6.1.1\lib\net40\EntityFramework.dll</HintPath>
     </Reference>
-    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\EntityFramework.6.0.1\lib\net40\EntityFramework.SqlServer.dll</HintPath>
+    <Reference Include="EntityFramework.SqlServer">
+      <HintPath>packages\EntityFramework.6.1.1\lib\net40\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
     <Reference Include="itextsharp">
       <HintPath>..\..\..\Sites\WendelPoultryAdmin\trunk\packages\DoddleReport.iTextSharp.1.4\lib\net40\itextsharp.dll</HintPath>
     </Reference>
-    <Reference Include="Joe.Business, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Joe.Business, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Business.1.0.5.7\lib\net40\Joe.Business.dll</HintPath>
+      <HintPath>packages\Joe.Business.2.0.0.0-alpha\lib\net40\Joe.Business.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Caching, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Caching.1.0.1\lib\net40\Joe.Caching.dll</HintPath>
+      <HintPath>packages\Joe.Caching.1.0.8\lib\net40\Joe.Caching.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Init, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>packages\Joe.Init.1.0.0.3\lib\net40\Joe.Init.dll</HintPath>
     </Reference>
-    <Reference Include="Joe.Map, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Joe.Map, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Map.1.0.4.8\lib\net40\Joe.Map.dll</HintPath>
-    </Reference>
-    <Reference Include="Joe.MapBack, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.MapBack.1.0.1.1\lib\net40\Joe.MapBack.dll</HintPath>
+      <HintPath>packages\Joe.Map.2.0.0.3-alpha\lib\net40\Joe.Map.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Reflection, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Reflection.1.0.4\lib\net40\Joe.Reflection.dll</HintPath>
+      <HintPath>packages\Joe.Reflection.1.0.9\lib\net40\Joe.Reflection.dll</HintPath>
     </Reference>
-    <Reference Include="Joe.Security, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Security.1.0.2.3\lib\net40\Joe.Security.dll</HintPath>
+    <Reference Include="Joe.Security">
+      <HintPath>packages\Joe.Security.1.0.2.7\lib\net40\Joe.Security.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Data.OData, Version=5.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>packages\Microsoft.Data.OData.5.2.0\lib\net40\Microsoft.Data.OData.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>.\packages\Newtonsoft.Json.4.5.11\lib\net40\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>packages\Newtonsoft.Json.6.0.3\lib\net40\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -192,6 +186,7 @@
     <Compile Include="BaseErrorController.cs" />
     <Compile Include="BaseManyToManyApiController.cs" />
     <Compile Include="BaseManyToManyController.cs" />
+    <Compile Include="ErrorLogger.cs" />
     <Compile Include="RepositoryController.cs" />
     <Compile Include="ConfigurationOptionsAttribute.cs" />
     <Compile Include="Configuration\ConfigurationHelper.cs" />
