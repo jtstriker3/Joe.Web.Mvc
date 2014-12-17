@@ -10,6 +10,7 @@ using Joe.Web.Mvc.Utility.Configuration;
 using Joe.Web.Mvc.Utility.Extensions;
 using System.ComponentModel.DataAnnotations;
 using System.Data.Entity.Validation;
+using Joe.Business.Approval;
 
 namespace Joe.Web.Mvc
 {
@@ -87,6 +88,12 @@ namespace Joe.Web.Mvc
                 }
 
                 this.ModelState.AddModelError(String.Empty, ex.Message);
+            }
+            else if (ex is ApprovalNeededException)
+            {
+                var approvalException = (ApprovalNeededException)ex;
+                var url = String.Format(ConfigurationHelper.ChangeSubmitUrl, approvalException.ChangeID);
+                return this.AutoRedirect(url);
             }
             else
             {

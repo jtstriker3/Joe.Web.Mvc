@@ -15,12 +15,13 @@ using System.Web.Http;
 using Joe.Web.Mvc.Utility.Extensions;
 using Joe.Web.Mvc.Utility.Configuration;
 using Joe.Map;
+using System.Web.Http.OData;
 
 
 namespace Joe.Web.Mvc
 {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
-    public class JoeQueryableAttribute : QueryableAttribute, IOrderedFilter
+    public class JoeQueryableAttribute : EnableQueryAttribute, IOrderedFilter
     {
         public int Order { get; private set; }
 

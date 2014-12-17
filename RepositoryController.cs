@@ -16,32 +16,32 @@ using System.ComponentModel;
 namespace Joe.Web.Mvc
 {
     [Obsolete("This class is obsolete. It is just a place holder for legacy code. Please Inherit from RepositoryController")]
-    public abstract class BaseSingleIDController<TModel, TViewModel, TRepository> : RepositoryController<TModel, TViewModel, TRepository>
+    public abstract class BaseSingleIDController<TModel, TViewModel, TContext> : RepositoryController<TModel, TViewModel, TContext>
         where TModel : class
         where TViewModel : class, new()
-        where TRepository : IDBViewContext, new()
+        where TContext : IDBViewContext, new()
     {
-        public BaseSingleIDController(IRepository<TModel, TViewModel, TRepository> repository)
+        public BaseSingleIDController(IRepository<TModel, TViewModel, TContext> repository)
             : base(repository)
         {
 
         }
     }
 
-    public abstract class RepositoryController<TModel, TViewModel, TRepository> : BaseController
+    public abstract class RepositoryController<TModel, TViewModel, TContext> : BaseController
         where TModel : class
         where TViewModel : class, new()
-        where TRepository : IDBViewContext, new()
+        where TContext : IDBViewContext, new()
     {
         protected MvcOptionsAttribute Options { get; set; }
-        public IRepository<TModel, TViewModel, TRepository> Repository { get; set; }
+        public IRepository<TModel, TViewModel, TContext> Repository { get; set; }
         public delegate TViewModel GetDelegate(TViewModel viewModel, params String[] ids);
         public delegate IQueryable<TViewModel> GetListDelegate(IQueryable<TViewModel> viewModelList);
         public GetDelegate ViewModelRetrieved;
         public GetListDelegate ViewModelListRetrived;
 
 
-        public RepositoryController(IRepository<TModel, TViewModel, TRepository> repository)
+        public RepositoryController(IRepository<TModel, TViewModel, TContext> repository)
             : base(repository)
         {
             Options = (MvcOptionsAttribute)GetType().GetCustomAttributes(typeof(MvcOptionsAttribute), true).SingleOrDefault() ?? new MvcOptionsAttribute();
@@ -114,7 +114,7 @@ namespace Joe.Web.Mvc
                     descending = Convert.ToBoolean(Request.QueryString["descending"]);
                     where = filterString ?? Convert.ToString(Request.QueryString["where"]);
                     int count;
-                    var viewModelList = this.Repository.Get(out count, filter, take.HasValue ? take : Options.DefaultPageSize, skip, descending: descending, orderBy: orderBy, stringFilter: where, dynamicFilter: dynamicFilters, mapRepoFunctionsOverride: this.Options.MapRepoFunctionForList);
+                    var viewModelList = this.Repository.Get(out count, filter, null, take.HasValue ? take : Options.DefaultPageSize, skip, descending: descending, orderBy: orderBy, stringFilter: where, dynamicFilter: dynamicFilters, mapRepoFunctionsOverride: this.Options.MapRepoFunctionForList);
                     ViewBag.Count = count;
                     ViewBag.Take = take.HasValue ? take.Value : Options.DefaultPageSize;
                     ViewBag.Skip = skip.HasValue ? skip.Value : 0;

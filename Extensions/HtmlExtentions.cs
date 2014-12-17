@@ -1082,6 +1082,37 @@ namespace Joe.Web.Mvc.Utility.Extensions
 
         }
 
+        public static MvcHtmlString LocalizedEditorLinkFor<TModel, TValue>(this HtmlHelper<TModel> html, Expression<Func<TModel, TValue>> expression, Object htmlAttributes = null)
+        {
+            var memberExpression = (expression.Body as MemberExpression);
+            var resourceProvider = Joe.Business.Resource.ResourceProvider.ProviderInstance;
+            var htmlRouteValueCollection = new RouteValueDictionary(htmlAttributes);
+            var isAdmin = html.ViewContext.HttpContext.User.IsInRole(Configuration.ConfigurationHelper.AdminRole);
+            if (memberExpression != null && resourceProvider != null)
+            {
+                htmlRouteValueCollection.Add("for", memberExpression.Member.Name);
+
+                var resource = resourceProvider.GetResource(memberExpression.Member.Name, memberExpression.Member.DeclaringType.Name);
+                //var label = new TagBuilder("label");
+                //label.MergeAttributes(htmlRouteValueCollection);
+                Boolean hasResource = resource != memberExpression.Member.Name;
+
+                if (hasResource)
+                {
+                   var resourceLink = GenerateResourceLink(hasResource, html, memberExpression.Member.Name, memberExpression.Member.DeclaringType.Name);
+                   return new MvcHtmlString(resourceLink.ToString());
+                }
+                else
+                {
+                    return new MvcHtmlString(GenerateResourceLink(hasResource, html, memberExpression.Member.Name, memberExpression.Member.DeclaringType.Name));
+                }
+
+            }
+
+            return html.LabelFor(expression, htmlAttributes);
+
+        }
+
         private static String GenerateResourceLink(Boolean hasResource, HtmlHelper html, String name, String type)
         {
             var isAdmin = html.ViewContext.HttpContext.User.IsInRole(Configuration.ConfigurationHelper.AdminRole);

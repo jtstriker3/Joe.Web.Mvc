@@ -14,11 +14,12 @@ using Joe.MapBack;
 using DotNet.Highcharts.Options;
 using DotNet.Highcharts.Helpers;
 using DotNet.Highcharts.Enums;
+using DoddleReport.Configuration;
 
 namespace Joe.Web.Mvc
 {
-    public abstract class ReportController<TRepository> : Controller
-        where TRepository : IDBViewContext, new()
+    public abstract class ReportController<TContext> : Controller
+        where TContext : IDBViewContext, new()
     {
         //
         // GET: /Report/
@@ -34,31 +35,31 @@ namespace Joe.Web.Mvc
             IReportRepository reportRepo = new ReportRepository();
             var report = reportRepo.GetReport(id);
             if (report.Single)
-                report.SingleChoices = reportRepo.GetSingleList<TRepository>(report);
+                report.SingleChoices = reportRepo.GetSingleList<TContext>(report);
             foreach (var filter in report.Filters)
                 if (filter.IsListFilter || filter.IsValueFilter)
-                    filter.ListValues = reportRepo.GetFilterValues<TRepository>(filter);
+                    filter.ListValues = reportRepo.GetFilterValues<TContext>(filter);
             return this.Request.IsAjaxRequest() ? PartialView(report) : (ActionResult)View(report);
         }
 
         public ActionResult Run([Bind(Exclude = "ReportFilterAttribute")] Joe.Business.Report.Report report)
         {
             IReportRepository reportRepo = new ReportRepository();
-
-            var result = reportRepo.Run<TRepository>(report);
+            IReport outReport;
+            var result = reportRepo.Run<TContext>(report, out outReport);
+            report = (Joe.Business.Report.Report)outReport;
             var extension = this.Request.RequestContext.RouteData.Values["extension"];
-            var isNotHtml = extension != null && !extension.ToString().ToLower().Contains("html");
             var reportFromView = reportRepo.GetReport(report.Name);
 
             if (report.Chart)
             {
-                return GenerateChartReport(report, result);
+                return GenerateChartReport((IChartReport)report, reportRepo, result);
             }
             else if (report.UiHint.NotNull())
             {
                 ViewBag.Title = report.Name;
                 ViewBag.Description = report.Description;
-                ViewBag.Filters = report.Filters.BuildFilterHeading(true);
+                ViewBag.Filters = report.Filters.BuildFilterHeading<TContext>(reportRepo, true);
                 if (typeof(IEnumerable).IsAssignableFrom(result.GetType()))
                 {
                     var ienumerableResult = (IEnumerable)result;
@@ -74,8 +75,17 @@ namespace Joe.Web.Mvc
             else
             {
                 DoddleReport.Report doddleReport = new DoddleReport.Report();
+                WriterElement writerElement = this.GetWriterElement();
+                var isNotHtml = false;
+
+                if (extension != null && !extension.ToString().ToLower().Contains("html"))
+                    isNotHtml = true;
+                else if (writerElement != null && !writerElement.FileExtension.ToLower().Contains("html"))
+                    isNotHtml = true;
+
+                var reportCssUrl = UrlHelper.GenerateContentUrl("~/content/report.css", this.HttpContext);
                 if (!isNotHtml)
-                    doddleReport.TextFields.Title = "<link href='/content/report.css' rel='stylesheet' />" + reportFromView.Name;
+                    doddleReport.TextFields.Title = String.Format("<link href='{0}' rel='stylesheet' />", reportCssUrl) + reportFromView.Name;
                 else
                     doddleReport.TextFields.Title = reportFromView.Name;
                 doddleReport.TextFields.SubTitle = reportFromView.Description;
@@ -105,7 +115,6 @@ namespace Joe.Web.Mvc
                             }
                         }
                     }
-
 
                 }
                 else
@@ -142,7 +151,7 @@ namespace Joe.Web.Mvc
 
                 }
 
-                doddleReport.TextFields.Header += Environment.NewLine + "<b>Filters</b><br/>" + report.Filters.BuildFilterHeading();
+                doddleReport.TextFields.Header += Environment.NewLine + (isNotHtml ? "Filters" + Environment.NewLine : "<b>Filters</b><br/>") + report.Filters.BuildFilterHeading<TContext>(reportRepo);
                 if (reportFromView.Filters.NotNull())
                     foreach (var filter in reportFromView.Filters)
                     {
@@ -161,23 +170,26 @@ namespace Joe.Web.Mvc
                 if (idField.NotNull())
                     idField.Hidden = true;
 
-                return new ReportResult(doddleReport);
+                if (writerElement != null)
+                    return new ReportResult(doddleReport, DoddleReport.Configuration.Config.Report.Writers.GetWriterByName(writerElement.Format), writerElement.ContentType) { FileName = report.Name + writerElement.FileExtension };
+                else
+                    return new ReportResult(doddleReport);
             }
         }
 
-        private ActionResult GenerateChartReport(Joe.Business.Report.Report report, object result)
+        private ActionResult GenerateChartReport(Joe.Business.Report.IChartReport report, IReportRepository repo, object result)
         {
             var renderFunction = "renderReport" + report.Name.Replace(" ", String.Empty);
             ViewBag.RenderFunction = renderFunction;
             var chartTypeStr = this.Request.QueryString["ChartType"];
-            ViewBag.Filters = report.Filters.BuildFilterHeading(true);
+            ViewBag.Filters = report.Filters.BuildFilterHeading<TContext>(repo, true);
             if (typeof(IEnumerable).IsAssignableFrom(result.GetType()))
             {
 
-                if (typeof(IChartPoint).IsAssignableFrom(report.ReportView))
+                if (typeof(IChartPoint).IsAssignableFrom(result.GetType().GetGenericArguments().FirstOrDefault()))
                 {
                     var iChartPoints = ((IEnumerable)result).Cast<IChartPoint>();
-
+                    iChartPoints = iChartPoints.AddSeries();
                     var seriesData = iChartPoints.GroupBy(g => g.Series).Select(group => new Series
                     {
                         Name = group.Key.ToString(),
@@ -189,115 +201,215 @@ namespace Joe.Web.Mvc
                                                                 {
                                                                     Type = this.GetChartType(report),
                                                                     ClassName = "chart",
+                                                                    Height = report.Height
                                                                 })
                                                                .SetSeries(seriesData)
                                                                .SetTitle(new Title() { Text = report.Name });
+                    var xAxis = GetXAxis(iChartPoints);
+                    chart.SetXAxis(new XAxis()
+                    {
+                        Type = AxisTypes.Category,
+                        Categories = xAxis.ToArray(),
+                        Labels = new XAxisLabels()
+                        {
+                            Rotation = report.XRotation
+                        }
+                    });
+
+                    if (report.YAxisPlotLines != null)
+                        chart.SetYAxis(new YAxis
+                        {
+                            PlotLines = this.GetYAxisPlotLines(report),
+                            Title = new YAxisTitle()
+                                   {
+                                       Text = report.YAxisText
+                                   }
+                        });
+                    else if (report.YAxisText != null)
+                        chart.SetYAxis(new YAxis
+                        {
+                            Title = new YAxisTitle()
+                            {
+                                Text = report.YAxisText
+                            }
+                        });
+
+                    this.AddChartLabels(chart, report);
                     chart.InFunction(renderFunction);
-                    //SetDefaultXAxis(iChartPoints, chart);
-                    return View("Chart", chart);
+
+                    return this.Request.IsAjaxRequest() ? PartialView("Chart", chart) : (ActionResult)View("Chart", chart);
                 }
-                else if (typeof(IChartReport).IsAssignableFrom(report.ReportView))
+                else if (typeof(IChartReportResult).IsAssignableFrom(result.GetType().GetGenericArguments().FirstOrDefault()))
                 {
-                    var resultEnumerable = ((IEnumerable)result).Cast<IChartReport>();
+                    var resultEnumerable = ((IEnumerable)result).Cast<IChartReportResult>();
                     var firstResult = resultEnumerable.FirstOrDefault();
 
                     if (firstResult.NotNull())
                     {
+                        DotNet.Highcharts.Highcharts chart = new DotNet.Highcharts.Highcharts("chart");
+
+                        IEnumerable<String> xAxis;
+                        if (firstResult.XAxis.NotNull())
+                            xAxis = firstResult.XAxis;
+                        else
+                            xAxis = GetXAxis(resultEnumerable.SelectMany(series => series.Data.Cast<IPoint>()).Cast<IPoint>());
+
+                        if (xAxis.Count() > 0)
+                        {
+                            //xAxis.Sort();
+                            chart.SetXAxis(new XAxis()
+                            {
+                                Type = AxisTypes.Category,
+                                Categories = xAxis.ToArray(),
+                                Labels = new XAxisLabels()
+                                {
+                                    Rotation = report.XRotation
+                                }
+                            });
+                        }
+
+
+                        if (firstResult.YAxis.NotNull())
+                            chart.SetYAxis(new YAxis
+                            {
+                                Categories = firstResult.YAxis.ToArray(),
+                                PlotLines = this.GetYAxisPlotLines(report),
+                                Title = new YAxisTitle()
+                                {
+                                    Text = report.YAxisText
+                                }
+                            });
+                        else if (report.YAxisPlotLines != null)
+                            chart.SetYAxis(new YAxis
+                            {
+                                PlotLines = this.GetYAxisPlotLines(report),
+                                Title = new YAxisTitle()
+                                {
+                                    Text = report.YAxisText
+                                }
+                            });
+                        else if (report.YAxisText != null)
+                            chart.SetYAxis(new YAxis
+                            {
+                                Title = new YAxisTitle()
+                                {
+                                    Text = report.YAxisText
+                                }
+                            });
+
                         var seriesData = resultEnumerable.Select(point =>
                                          new Series()
                                          {
                                              Name = point.Series.ToString(),
                                              Data = new Data(
                                                  ((IEnumerable)point.Data).Cast<IPoint>().GroupBy(reportGrouping => reportGrouping.X)
-                                                 .Select(g => new ChartPoint() { Y = g.Sum(p => p.Y.ToDouble()), X = g.Key }).To2DimensionalArray())
+                                                 .Select(g => new ChartPoint() { Y = g.Sum(p => p.Y.ToDouble()), X = g.Key }).ToDictionary(cp => cp.X.ToString()).AddZeroDataPoints(xAxis))
                                          }).ToArray();
 
-                        DotNet.Highcharts.Highcharts chart = new DotNet.Highcharts.Highcharts("chart")
-                                                                   .InitChart(new Chart()
-                                                                   {
-                                                                       Type = this.GetChartType(report),
-                                                                       ClassName = "chart",
-                                                                   })
-                                                                  .SetSeries(seriesData)
-                                                                  .SetTitle(new Title() { Text = report.Name });
 
-                        if (firstResult.XAxis.NotNull())
-                            chart.SetXAxis(new XAxis
-                            {
-                                Categories = firstResult.XAxis.ToArray()
-                            });
-                        else
+                        chart.InitChart(new Chart()
                         {
-                            var iChartPoints = resultEnumerable.SelectMany(r => r.Data.Cast<IChartPoint>());
-                            SetDefaultXAxis(iChartPoints, chart);
-                        }
-                        if (firstResult.YAxis.NotNull())
-                            chart.SetYAxis(new YAxis
-                            {
-                                Categories = firstResult.YAxis.ToArray()
-                            });
+                            Type = this.GetChartType(report),
+                            ClassName = "chart",
+                            Height = report.Height
+                        })
+                       .SetSeries(seriesData)
+                       .SetTitle(new Title() { Text = report.Name });
+                        this.AddChartLabels(chart, report);
                         chart.InFunction(renderFunction);
 
-                        return View("Chart", chart);
+                        return this.Request.IsAjaxRequest() ? PartialView("Chart", chart) : (ActionResult)View("Chart", chart);
                     }
                 }
-                return View("Chart");
+                return this.Request.IsAjaxRequest() ? PartialView("Chart") : (ActionResult)View("Chart");
             }
             else
             {
                 if (result != null)
                 {
-                    var iChartReport = (IChartReport)result;
+                    var IChartReportResult = (IChartReportResult)result;
                     DotNet.Highcharts.Highcharts chart = new DotNet.Highcharts.Highcharts("chart")
                         .InitChart(new Chart()
                         {
                             Type = this.GetChartType(report),
                             ClassName = "chart",
+                            Height = report.Height
                         });
+
+                    IEnumerable<String> xAxis;
+
+                    if (IChartReportResult.XAxis.NotNull())
+                        xAxis = IChartReportResult.XAxis;
+                    else
+                        xAxis = GetXAxis(IChartReportResult.Data.Cast<IPoint>());
+
+                    if (xAxis.Count() > 0)
+                    {
+                        //xAxis.Sort();
+                        chart.SetXAxis(new XAxis()
+                        {
+                            Type = AxisTypes.Category,
+                            Categories = xAxis.ToArray(),
+                            Labels = new XAxisLabels()
+                                    {
+                                        Rotation = report.XRotation
+                                    }
+                        });
+                    }
+
+                    if (IChartReportResult.YAxis.NotNull())
+                        chart.SetYAxis(new YAxis
+                        {
+                            Categories = IChartReportResult.YAxis.ToArray(),
+                            PlotLines = this.GetYAxisPlotLines(report),
+                            Title = new YAxisTitle()
+                            {
+                                Text = report.YAxisText
+                            }
+                        });
+                    else if (report.YAxisPlotLines != null)
+                        chart.SetYAxis(new YAxis
+                        {
+                            PlotLines = this.GetYAxisPlotLines(report),
+                            Title = new YAxisTitle()
+                                   {
+                                       Text = report.YAxisText
+                                   }
+                        });
+                    else if (report.YAxisText != null)
+                        chart.SetYAxis(new YAxis
+                        {
+                            Title = new YAxisTitle()
+                            {
+                                Text = report.YAxisText
+                            }
+                        });
+
                     var series = new Series()
                     {
-                        Name = iChartReport.Series.ToString(),
+                        Name = IChartReportResult.Series.ToString(),
                         Data = new Data(
-                            ((IEnumerable)iChartReport.Data).Cast<IPoint>().GroupBy(reportGrouping => reportGrouping.X)
-                            .Select(g => new ChartPoint() { Y = g.Sum(p => p.Y.ToDouble()), X = g.Key }).To2DimensionalArray())
+                            ((IEnumerable)IChartReportResult.Data).Cast<IPoint>().GroupBy(reportGrouping => reportGrouping.X)
+                            .Select(g => new ChartPoint() { Y = g.ToList().Sum(p => p.Y.ToDouble()), X = g.Key.ToString() }).ToDictionary(cp => cp.X.ToString()).AddZeroDataPoints(xAxis))
                     };
                     chart.SetSeries(series);
                     chart.SetTitle(new Title() { Text = report.Name });
 
-                    if (iChartReport.XAxis.NotNull())
-                        chart.SetXAxis(new XAxis
-                        {
-                            Categories = iChartReport.XAxis.ToArray()
-                        });
-                    else
-                    {
-                        SetDefaultXAxis(iChartReport.Data.Cast<IChartPoint>(), chart);
-                    }
-                    if (iChartReport.YAxis.NotNull())
-                        chart.SetYAxis(new YAxis
-                        {
-                            Categories = iChartReport.YAxis.ToArray()
-                        });
+                    this.AddChartLabels(chart, report);
                     chart.InFunction(renderFunction);
 
-                    return View("Chart", chart);
+                    return this.Request.IsAjaxRequest() ? PartialView("Chart", chart) : (ActionResult)View("Chart", chart);
                 }
 
-                return View("Chart");
+                return this.Request.IsAjaxRequest() ? PartialView("Chart") : (ActionResult)View("Chart");
             }
         }
 
-        private void SetDefaultXAxis(IEnumerable<IPoint> iChartPoints, DotNet.Highcharts.Highcharts chart)
+        private IEnumerable<String> GetXAxis(IEnumerable<IPoint> iChartPoints)
         {
-            var xAxisList = iChartPoints.Where(p => p.X != null).Select(p => p.X.ToString()).Distinct().ToList();
-            if (xAxisList.Count > 0)
-            {
-                xAxisList.Sort();
-                chart.SetXAxis(new XAxis()
-                {
-                    Categories = xAxisList.ToArray()
-                });
-            }
+            var xAxis = iChartPoints.Where(p => p.X != null).Select(p => p.X.ToString()).Distinct().ToList();
+            //xAxis.Sort();
+            return xAxis;
         }
 
         public virtual IEnumerable<IReport> FilterReports(IEnumerable<IReport> reports)
@@ -305,7 +417,7 @@ namespace Joe.Web.Mvc
             return reports;
         }
 
-        private DotNet.Highcharts.Enums.ChartTypes GetChartType(Joe.Business.Report.IReport report)
+        private DotNet.Highcharts.Enums.ChartTypes GetChartType(Joe.Business.Report.IChartReport report)
         {
             var chartTypeStr = this.Request.QueryString["ChartType"];
             if (chartTypeStr != null)
@@ -344,10 +456,116 @@ namespace Joe.Web.Mvc
             return (DotNet.Highcharts.Enums.ChartTypes)Enum.Parse(typeof(DotNet.Highcharts.Enums.ChartTypes), report.ChartType.ToString());
         }
 
-        private class ChartPoint : IPoint
+        private IList<T> AddZeroDataPoints<T>(IDictionary<Object, T> chartPoints, IEnumerable<String> categories)
+            where T : IPoint, new()
         {
-            public Object X { get; set; }
-            public Object Y { get; set; }
+            var chartPointList = new List<T>();
+            foreach (var category in categories)
+            {
+                if (chartPoints.ContainsKey(category))
+                    chartPoints.Add(category, chartPoints[category]);
+                else
+                    chartPoints.Add(category, new T() { X = category, Y = 0 });
+            }
+
+            return chartPointList;
         }
+
+        private void AddChartLabels(DotNet.Highcharts.Highcharts chart, IChartReport report)
+        {
+            if (report.ShowLabels)
+                chart.SetPlotOptions(new PlotOptions()
+                {
+                    Bar = new PlotOptionsBar()
+                    {
+                        DataLabels = new PlotOptionsBarDataLabels()
+                        {
+                            Align = this.GetAlignment(report.LabelAlign),
+                            Color = System.Drawing.ColorTranslator.FromHtml(report.LabelColor),
+                            X = report.LabelX,
+                            Y = report.LabelY,
+                            Rotation = report.LabelAngle,
+                            Enabled = true,
+                            Shadow = report.LabelShadow,
+                            Style = report.LabelStyle
+                        }
+                    },
+                    Column = new PlotOptionsColumn()
+                    {
+                        DataLabels = new PlotOptionsColumnDataLabels()
+                        {
+                            Align = this.GetAlignment(report.LabelAlign),
+                            Color = System.Drawing.ColorTranslator.FromHtml(report.LabelColor),
+                            X = report.LabelX,
+                            Y = report.LabelY,
+                            Rotation = report.LabelAngle,
+                            Enabled = true,
+                            Shadow = report.LabelShadow,
+                            Style = report.LabelStyle
+                        }
+                    }
+                });
+        }
+
+        private DotNet.Highcharts.Enums.HorizontalAligns? GetAlignment(String labelAlign)
+        {
+            if (labelAlign != null)
+                switch (labelAlign.ToLower())
+                {
+                    case "center":
+                        return HorizontalAligns.Center;
+                    case "right":
+                        return HorizontalAligns.Right;
+                    case "left":
+                        return HorizontalAligns.Left;
+                    default: return null;
+                }
+
+            return null;
+        }
+
+        private YAxisPlotLines[] GetYAxisPlotLines(IChartReport report)
+        {
+            var lines = new List<YAxisPlotLines>();
+            if (report.YAxisPlotLines != null)
+            {
+                foreach (var plotLine in report.YAxisPlotLines)
+                {
+                    var newLine = new YAxisPlotLines();
+                    newLine.Value = plotLine.Value;
+                    newLine.Width = plotLine.Width;
+                    newLine.Color = System.Drawing.ColorTranslator.FromHtml(plotLine.Color);
+                    newLine.DashStyle = (DashStyles)((int)plotLine.DashStyle);
+                    newLine.Label = new YAxisPlotLinesLabel()
+                    {
+                        X = plotLine.Label.X,
+                        Y = plotLine.Label.Y,
+                        Text = plotLine.Label.Text,
+                        Rotation = plotLine.Label.Rotation,
+                        Align = this.GetAlignment(plotLine.Label.Align),
+                        Style = plotLine.Label.Style
+                    };
+                    lines.Add(newLine);
+                }
+            }
+
+            return lines.ToArray();
+        }
+
+        private WriterElement GetWriterElement()
+        {
+            var reportType = this.HttpContext.Request.QueryString["reporttype"];
+
+            if (reportType != null)
+                return DoddleReport.Configuration.Config.Report.Writers.Cast<WriterElement>().SingleOrDefault(e => e.Format.ToLower() == reportType.ToLower());
+
+            return null;
+        }
+    }
+
+    class ChartPoint : IPoint
+    {
+        public Object X { get; set; }
+        public Object Y { get; set; }
     }
 }

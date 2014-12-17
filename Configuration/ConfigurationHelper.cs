@@ -51,5 +51,14 @@ namespace Joe.Web.Mvc.Utility.Configuration
                 return adminArea.NotNull() ? adminArea + "/" : String.Empty;
             }
         }
+
+        public static String ChangeSubmitUrl
+        {
+            get
+            {
+                var changeSubmitUrl = System.Web.Configuration.WebConfigurationManager.AppSettings["ChangeSubmitUrl"] as String;
+                return changeSubmitUrl.NotNull() ? changeSubmitUrl : "~/change/submit/{0}";
+            }
+        }
     }
 }

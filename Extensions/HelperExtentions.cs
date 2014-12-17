@@ -17,6 +17,8 @@ using System.Reflection;
 using System.ComponentModel.DataAnnotations;
 using Joe.Business;
 using Joe.Reflection;
+using DotNet.Highcharts.Options;
+using Joe.MapBack;
 
 namespace Joe.Web.Mvc.Utility.Extensions
 {
@@ -211,7 +213,8 @@ namespace Joe.Web.Mvc.Utility.Extensions
             return ids;
         }
 
-        public static String BuildFilterHeading(this IEnumerable<IReportFilter> filters, bool html = false)
+        public static String BuildFilterHeading<TRepository>(this IEnumerable<IReportFilter> filters, IReportRepository repository, bool html = false)
+             where TRepository : IDBViewContext, new()
         {
             if (filters.NotNull())
             {
@@ -226,22 +229,22 @@ namespace Joe.Web.Mvc.Utility.Extensions
                             var div = new TagBuilder("div");
                             var strong = new TagBuilder("strong");
                             strong.InnerHtml = display + ": ";
-                            div.InnerHtml = strong.ToString() + filter.Value;
+                            div.InnerHtml = strong.ToString() + (filter.ListView != null && filter.Value != null && filter.GetDisplayFromContext ? repository.GetFilterDisplay<TRepository>(filter) : filter.Value);
                             filterHeader += div.ToString();
                         }
                         else
-                            filterHeader = display + ": " + filter.Value;
+                            filterHeader = display + ": " + (filter.ListView != null && filter.Value != null && filter.GetDisplayFromContext ? repository.GetFilterDisplay<TRepository>(filter) : filter.Value);
                     else
                         if (html)
                         {
                             var div = new TagBuilder("div");
                             var strong = new TagBuilder("strong");
                             strong.InnerHtml = display + ": ";
-                            div.InnerHtml = strong.ToString() + filter.Value;
+                            div.InnerHtml = strong.ToString() + (filter.ListView != null && filter.Value != null && filter.GetDisplayFromContext ? repository.GetFilterDisplay<TRepository>(filter) : filter.Value);
                             filterHeader += div.ToString();
                         }
                         else
-                            filterHeader += Environment.NewLine + display + ": " + filter.Value;
+                            filterHeader += Environment.NewLine + display + ": " + (filter.ListView != null && filter.Value != null && filter.GetDisplayFromContext ? repository.GetFilterDisplay<TRepository>(filter) : filter.Value);
                 }
 
                 return filterHeader;
@@ -382,6 +385,70 @@ namespace Joe.Web.Mvc.Utility.Extensions
             }
 
             return array;
+        }
+
+        public static ActionResult AutoRedirect(this Controller controller, String action, String controllerName = null, object routeValues = null)
+        {
+            var urlHelper = new UrlHelper(controller.Request.RequestContext);
+            var url = urlHelper.Action(action, controllerName, routeValues);
+            if (controller.Request.IsAjaxRequest())
+            {
+                return controller.AjaxAction(new AjaxActionData("Redirect", url), JsonRequestBehavior.AllowGet);
+            }
+            else
+                return new RedirectResult(url);
+        }
+
+        public static ActionResult AutoRedirect(this Controller controller, String url)
+        {
+            //var urlHelper = new UrlHelper(controller.Request.RequestContext);
+            //var contentUrl = urlHelper.Content(url);
+            if (controller.Request.IsAjaxRequest())
+            {
+                return controller.AjaxAction(new AjaxActionData("Redirect", url), JsonRequestBehavior.AllowGet);
+            }
+            else
+                return new RedirectResult(url);
+        }
+
+        internal static Point[] AddZeroDataPoints(this IDictionary<String, ChartPoint> chartPoints, IEnumerable<String> categories)
+        {
+            var chartPointList = new List<ChartPoint>();
+            foreach (var category in categories)
+            {
+                if (chartPoints.ContainsKey(category))
+                    chartPointList.Add(chartPoints[category]);
+                else
+                    chartPointList.Add(new ChartPoint() { X = category, Y = 0 });
+            }
+
+            return chartPointList.Select(cp => new Point() { Y = cp.Y.ToDouble() }).ToArray();
+        }
+
+        internal static IEnumerable<IChartPoint> AddSeries(this IEnumerable<IChartPoint> chartPoints)
+        {
+            var serieses = chartPoints.Select(p => p.Series).Distinct();
+            var groupPoints = chartPoints.GroupBy(p => p.X);
+            var returnList = new List<IChartPoint>();
+            foreach (var group in groupPoints)
+            {
+                foreach (var series in serieses)
+                {
+                    if (!group.Select(p => p.Series).Contains(series))
+                        returnList.Add(new SeriesChartPoint() { Series = series, X = group.Key, Y = null });
+                }
+                returnList.AddRange(group);
+            }
+
+            return returnList;
+        }
+
+        internal class SeriesChartPoint : IChartPoint
+        {
+
+            public object Series { get; set; }
+            public object X { get; set; }
+            public object Y { get; set; }
         }
     }
 }
