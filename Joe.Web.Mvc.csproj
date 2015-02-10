@@ -172,6 +172,8 @@
     <Compile Include="AjaxActionData.cs" />
     <Compile Include="ApiAttribute.cs" />
     <Compile Include="Attributes.cs" />
+    <Compile Include="Report\Attributes\AverageAttribute.cs" />
+    <Compile Include="Report\Attributes\SumAttribute.cs" />
     <Compile Include="BaseApiController.cs" />
     <Compile Include="BaseController.cs" />
     <Compile Include="BaseErrorController.cs" />
@@ -181,6 +183,7 @@
     <Compile Include="Controllers\Approval\ApprovalGroupController.cs" />
     <Compile Include="Controllers\Approval\ChangeController.cs" />
     <Compile Include="ErrorLogger.cs" />
+    <Compile Include="Report\ReportExtensions.cs" />
     <Compile Include="RepositoryController.cs" />
     <Compile Include="ConfigurationOptionsAttribute.cs" />
     <Compile Include="Configuration\ConfigurationHelper.cs" />

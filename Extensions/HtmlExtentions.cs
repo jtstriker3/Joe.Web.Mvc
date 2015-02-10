@@ -473,6 +473,17 @@ namespace Joe.Web.Mvc.Utility.Extensions
                     label.InnerHtml = html.CheckBox("Value").ToString() + placeholder;
                     returnString = label.ToString();
                 }
+                else if (filter.FilterType.IsEnum)
+                {
+                    Object attributes;
+                    if (filter.IsOptional())
+                        attributes = new { @class = "chosen form-control", placeholder = placeholder, data_placeholder = placeholder };
+                    else
+                        attributes = new { @class = "chosen form-control", placeholder = placeholder, data_placeholder = placeholder, data_val = "true", data_val_required = String.Format("The {0} field is required.", placeholder) };
+
+                    returnString = html.DropDownListFor(model => model.Value, filter.FilterType.ToSelectList() , String.Empty,
+                        attributes).ToString();
+                }
                 else
                 {
                     Object attributes;
@@ -925,6 +936,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
                         editLink.InnerHtml = "Quick Edit".GetGlobalResource();
                         fullEdit.InnerHtml = "Edit".GetGlobalResource();
                         var deleteLink = new TagBuilder("a");
+                        deleteLink.Attributes.Add("data-delete", "true");
                         deleteLink.Attributes.Add("href", UrlHelper.GenerateContentUrl("~/" + area + controllerName + "/delete/" + item.GetIDs().ToRoute().Encode() + (isAjax ? "?UpdateTargetId=" + id : String.Empty) + (filterColumns.Count() > 0 ? "&filter=" + BuildFilterColumnsQueryString(filterColumns) : String.Empty), html.ViewContext.HttpContext));
                         deleteLink.InnerHtml = "Delete".GetGlobalResource();
                         if (isAjax)
@@ -1099,8 +1111,8 @@ namespace Joe.Web.Mvc.Utility.Extensions
 
                 if (hasResource)
                 {
-                   var resourceLink = GenerateResourceLink(hasResource, html, memberExpression.Member.Name, memberExpression.Member.DeclaringType.Name);
-                   return new MvcHtmlString(resourceLink.ToString());
+                    var resourceLink = GenerateResourceLink(hasResource, html, memberExpression.Member.Name, memberExpression.Member.DeclaringType.Name);
+                    return new MvcHtmlString(resourceLink.ToString());
                 }
                 else
                 {
@@ -1164,6 +1176,15 @@ namespace Joe.Web.Mvc.Utility.Extensions
             var values = from TEnum e in Enum.GetValues(typeof(TEnum))
                          select new { Id = e, Name = e.ToString().CaseToSpace() };
             return new SelectList(values, "Id", "Name", enumObj);
+        }
+
+        public static SelectList ToSelectList(this Type enumType)
+        {
+            var values = Enum.GetValues(enumType).Cast<Enum>()
+                .Select(e =>
+                         new { Id = e, Name = e.ToString().CaseToSpace() }
+                         );
+            return new SelectList(values, "Id", "Name", null);
         }
 
         public static String CaseToSpace(this String str)

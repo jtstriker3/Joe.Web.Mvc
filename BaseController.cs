@@ -60,6 +60,7 @@ namespace Joe.Web.Mvc
             ViewBag.Error = true;
             ViewBag.ErrorText = this.GetErrorMessage(ex, options);
             Response.StatusCode = 500;
+            Response.TrySkipIisCustomErrors = true;
             if (ConfigurationHelper.Debug)
                 return Json(new { errors = ViewBag.ErrorText, stackTrace = ex.StackTrace }, JsonRequestBehavior.AllowGet);
             else
