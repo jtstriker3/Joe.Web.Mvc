@@ -481,7 +481,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
                     else
                         attributes = new { @class = "chosen form-control", placeholder = placeholder, data_placeholder = placeholder, data_val = "true", data_val_required = String.Format("The {0} field is required.", placeholder) };
 
-                    returnString = html.DropDownListFor(model => model.Value, filter.FilterType.ToSelectList() , String.Empty,
+                    returnString = html.DropDownListFor(model => model.Value, filter.FilterType.ToSelectList(), String.Empty,
                         attributes).ToString();
                 }
                 else
@@ -588,7 +588,8 @@ namespace Joe.Web.Mvc.Utility.Extensions
             string controllerName = null,
             Object routeValues = null,
             FormMethod method = FormMethod.Post,
-            Object htmlAttributes = null)
+            Object htmlAttributes = null,
+            string updateTargetID = null)
         {
             if (!htmlHelper.ViewContext.HttpContext.Request.IsAjaxRequest())
             {
@@ -596,7 +597,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
             }
             else
             {
-                String updateTargetID = htmlHelper.ViewContext.HttpContext.Request.QueryString["UpdateTargetId"];
+                updateTargetID = htmlHelper.ViewContext.HttpContext.Request.QueryString["UpdateTargetId"] ?? updateTargetID;
                 String filter = htmlHelper.ViewContext.HttpContext.Request.QueryString["filter"];
                 var htmlAttributesDictionary = new RouteValueDictionary(htmlAttributes);
                 var routeValueDictionary = new RouteValueDictionary(routeValues);
