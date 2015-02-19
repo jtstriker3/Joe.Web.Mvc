@@ -15,33 +15,19 @@ using System.ComponentModel;
 
 namespace Joe.Web.Mvc
 {
-    [Obsolete("This class is obsolete. It is just a place holder for legacy code. Please Inherit from RepositoryController")]
-    public abstract class BaseSingleIDController<TModel, TViewModel, TContext> : RepositoryController<TModel, TViewModel, TContext>
+    public abstract class RepositoryController<TModel, TViewModel> : BaseController
         where TModel : class
         where TViewModel : class, new()
-        where TContext : IDBViewContext, new()
-    {
-        public BaseSingleIDController(IRepository<TModel, TViewModel, TContext> repository)
-            : base(repository)
-        {
-
-        }
-    }
-
-    public abstract class RepositoryController<TModel, TViewModel, TContext> : BaseController
-        where TModel : class
-        where TViewModel : class, new()
-        where TContext : IDBViewContext, new()
     {
         protected MvcOptionsAttribute Options { get; set; }
-        public IRepository<TModel, TViewModel, TContext> Repository { get; set; }
+        public IRepository<TModel, TViewModel> Repository { get; set; }
         public delegate TViewModel GetDelegate(TViewModel viewModel, params String[] ids);
         public delegate IQueryable<TViewModel> GetListDelegate(IQueryable<TViewModel> viewModelList);
         public GetDelegate ViewModelRetrieved;
         public GetListDelegate ViewModelListRetrived;
 
 
-        public RepositoryController(IRepository<TModel, TViewModel, TContext> repository)
+        public RepositoryController(IRepository<TModel, TViewModel> repository)
             : base(repository)
         {
             Options = (MvcOptionsAttribute)GetType().GetCustomAttributes(typeof(MvcOptionsAttribute), true).SingleOrDefault() ?? new MvcOptionsAttribute();
@@ -56,7 +42,7 @@ namespace Joe.Web.Mvc
 
         public virtual ActionResult Index()
         {
-            return this.Index(null);
+            return this.Index(String.Empty);
         }
 
         [HttpPost]
@@ -97,7 +83,7 @@ namespace Joe.Web.Mvc
             return Index(null, filterString: filterString);
         }
 
-        protected virtual ActionResult Index(Expression<Func<TViewModel, Boolean>> filter, Object dynamicFilters = null, String filterString = null)
+        internal virtual ActionResult Index(Expression<Func<TViewModel, Boolean>> filter, Object dynamicFilters = null, String filterString = null)
         {
             try
             {
@@ -284,7 +270,7 @@ namespace Joe.Web.Mvc
             this.Repository.Dispose();
         }
 
-        protected virtual String BuildIDRoute(TViewModel viewModel)
+        internal virtual String BuildIDRoute(TViewModel viewModel)
         {
             string route = String.Empty;
             var count = 0;
@@ -299,13 +285,13 @@ namespace Joe.Web.Mvc
             return route;
         }
 
-        protected virtual IEnumerable<String> Decode(params object[] ids)
+        internal virtual IEnumerable<String> Decode(params object[] ids)
         {
             foreach (var id in ids)
                 yield return Options.URLEncodeKey ? id.ToString().Decode() : id.ToString();
         }
 
-        protected virtual ActionResult CreateResult(TViewModel viewModel)
+        internal virtual ActionResult CreateResult(TViewModel viewModel)
         {
             if (this.Request.IsAjaxRequest())
             {
@@ -317,7 +303,7 @@ namespace Joe.Web.Mvc
             return this.RedirectToAction(Options.RedirectOnCreate ?? "Edit", Options.PassIDOnCreateRedirect ? new { ID = BuildIDRoute(viewModel), Success = true } : null);
         }
 
-        protected virtual ActionResult DeleteResult(TViewModel viewModel)
+        internal virtual ActionResult DeleteResult(TViewModel viewModel)
         {
             var filter = this.Request.QueryString["Filter"];
             if (filter.NotNull())
@@ -326,7 +312,7 @@ namespace Joe.Web.Mvc
             return this.RedirectToAction(Options.RedirectOnDelete ?? "Index");
         }
 
-        protected virtual ActionResult EditResult(TViewModel viewModel)
+        internal virtual ActionResult EditResult(TViewModel viewModel)
         {
             if (this.Request.IsAjaxRequest())
             {
@@ -340,12 +326,12 @@ namespace Joe.Web.Mvc
             return Request.IsAjaxRequest() ? PartialView(viewModel) : (ActionResult)this.View(viewModel);
         }
 
-        protected virtual ActionResult GetEditResult(TViewModel viewModel)
+        internal virtual ActionResult GetEditResult(TViewModel viewModel)
         {
             return Request.IsAjaxRequest() ? PartialView(viewModel) : (ActionResult)this.View(viewModel);
         }
 
-        protected virtual TViewModel InitCreateModel()
+        internal virtual TViewModel InitCreateModel()
         {
             var viewModel = new TViewModel();
             SetValuesFromQueryString(viewModel);
@@ -356,7 +342,7 @@ namespace Joe.Web.Mvc
 
         }
 
-        protected void SetValuesFromQueryString(TViewModel viewModel)
+        internal void SetValuesFromQueryString(TViewModel viewModel)
         {
             var set = Convert.ToString(Request.QueryString["set"]);
             if (!String.IsNullOrEmpty(set))
@@ -377,7 +363,7 @@ namespace Joe.Web.Mvc
             }
         }
 
-        protected virtual Boolean TryGetModelOnError(out TViewModel viewModel, params Object[] ids)
+        internal virtual Boolean TryGetModelOnError(out TViewModel viewModel, params Object[] ids)
         {
             Boolean success = false;
             viewModel = null;
@@ -394,5 +380,113 @@ namespace Joe.Web.Mvc
             return success;
         }
 
+    }
+
+    class RepositoryControllerWrapper<TModel, TViewModel> : RepositoryController<TModel, TViewModel>
+        where TModel : class
+        where TViewModel : class, new()
+    {
+        public RepositoryControllerWrapper(IRepository<TModel, TViewModel> repository) : base(repository) { }
+    }
+
+    public abstract class RepositoryController<TModel, TViewModel, TListViewModel> : Controller
+        where TModel : class
+        where TViewModel : class, new()
+        where TListViewModel : class, new()
+    {
+        protected Type _repositoryType;
+
+        private RepositoryController<TModel, TViewModel> _fullRepositoryController;
+        protected RepositoryController<TModel, TViewModel> FullRepositoryController
+        {
+            get
+            {
+                _fullRepositoryController = _fullRepositoryController ?? this.CreateController<TViewModel>((IRepository<TModel, TViewModel>)Joe.Business.Repository.CreateRepo(_repositoryType, typeof(TModel), typeof(TViewModel)));
+                return _fullRepositoryController;
+            }
+        }
+
+        private RepositoryController<TModel, TListViewModel> _listRepositoryController;
+        protected RepositoryController<TModel, TListViewModel> ListRepositoryController
+        {
+            get
+            {
+                _listRepositoryController = _listRepositoryController ?? this.CreateController<TListViewModel>((IRepository<TModel, TListViewModel>)Joe.Business.Repository.CreateRepo(_repositoryType, typeof(TModel), typeof(TListViewModel)));
+                return _listRepositoryController;
+            }
+        }
+
+        protected RepositoryController(Type repositoryType) : base()
+        {
+            _repositoryType = repositoryType;
+        }
+
+        public virtual ActionResult Index()
+        {
+            return ListRepositoryController.Index();
+        }
+
+        [HttpPost]
+        public virtual ActionResult Index(String filter)
+        {
+            return ListRepositoryController.Index(filter);
+        }
+
+        protected virtual ActionResult Index(Expression<Func<TListViewModel, Boolean>> filter, Object dynamicFilters = null, String filterString = null)
+        {
+            return ListRepositoryController.Index(filter, dynamicFilters, filterString);
+        }
+
+        public virtual ActionResult Details(String id)
+        {
+            return FullRepositoryController.Details(id);
+        }
+
+        public virtual ActionResult Create()
+        {
+            return FullRepositoryController.Create();
+        }
+
+        [ActionName("CreateWithID")]
+        public virtual ActionResult Create(string id)
+        {
+            return FullRepositoryController.Create(id);
+        }
+
+        [HttpPost, ValidateInput(true)]
+        public virtual ActionResult Create([Bind(Exclude = "ID")]TViewModel viewModel)
+        {
+            return FullRepositoryController.Create(viewModel);
+        }
+
+        public virtual ActionResult Edit(String id)
+        {
+            return FullRepositoryController.Edit(id);
+        }
+
+        [HttpPost, ValidateInput(true)]
+        public virtual ActionResult Edit(TViewModel viewModel)
+        {
+            return FullRepositoryController.Edit(viewModel);
+        }
+
+        public virtual ActionResult Delete(String id)
+        {
+            return FullRepositoryController.Delete(id);
+        }
+
+        [HttpPost]
+        public virtual ActionResult Delete(TViewModel viewModel)
+        {
+            return FullRepositoryController.Delete(viewModel);
+        }
+
+        protected virtual RepositoryController<TModel, TView> CreateController<TView>(IRepository<TModel, TView> repository)
+             where TView : class, new()
+        {
+            var controller = new RepositoryControllerWrapper<TModel, TView>(repository);
+            controller.ControllerContext = new ControllerContext(this.HttpContext, this.RouteData, this);
+            return controller;
+        }
     }
 }

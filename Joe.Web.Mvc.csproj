@@ -67,9 +67,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>packages\iTextSharp.5.5.3\lib\itextsharp.dll</HintPath>
     </Reference>
-    <Reference Include="Joe.Business, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Joe.Business, Version=3.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Business.3.0\lib\net45\Joe.Business.dll</HintPath>
+      <HintPath>packages\Joe.Business.3.1.0.3-alpha\lib\net45\Joe.Business.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Caching, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -81,7 +81,7 @@
     </Reference>
     <Reference Include="Joe.Map, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Map.3.0\lib\net40\Joe.Map.dll</HintPath>
+      <HintPath>packages\Joe.Map.3.0.2\lib\net40\Joe.Map.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Reflection, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -175,8 +175,6 @@
     <Compile Include="BaseApiController.cs" />
     <Compile Include="BaseController.cs" />
     <Compile Include="BaseErrorController.cs" />
-    <Compile Include="BaseManyToManyApiController.cs" />
-    <Compile Include="BaseManyToManyController.cs" />
     <Compile Include="Controllers\Approval\ApprovalController.cs" />
     <Compile Include="Controllers\Approval\ApprovalGroupController.cs" />
     <Compile Include="Controllers\Approval\ChangeController.cs" />

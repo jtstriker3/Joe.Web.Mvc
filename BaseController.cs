@@ -18,9 +18,13 @@ namespace Joe.Web.Mvc
     {
         public IRepository BaseRepository { get; set; }
 
-        public BaseController(IRepository baseRepository)
+        public BaseController(IRepository baseRepository) : base()
         {
             BaseRepository = baseRepository;
+        }
+
+        protected BaseController()
+        {
             ViewBag.Success = false;
             ViewBag.Error = false;
             ViewBag.Header = String.Empty;

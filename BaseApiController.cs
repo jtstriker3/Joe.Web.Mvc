@@ -14,19 +14,18 @@ using System.Web.Http.OData.Query;
 namespace Joe.Web.Mvc
 {
     [ErrorActionFilter]
-    public abstract class BaseApiController<TModel, TViewModel, TRepository> : ApiController, IBusinessController
+    public abstract class BaseApiController<TModel, TViewModel> : ApiController, IBusinessController
         where TModel : class, new()
         where TViewModel : class, new()
-        where TRepository : class, IDBViewContext, new()
     {
-        protected IRepository<TModel, TViewModel, TRepository> Repository { get; set; }
+        protected IRepository<TModel, TViewModel> Repository { get; set; }
         public delegate TViewModel GetDelegate(TViewModel viewModel, params String[] ids);
         public delegate IQueryable<TViewModel> GetListDelegate(IQueryable<TViewModel> viewModelList);
         public GetDelegate ViewModelRetrieved;
         public GetListDelegate ViewModelListRetrieved;
         public IRepository BaseRepository { get { return this.Repository; } }
 
-        public BaseApiController(IRepository<TModel, TViewModel, TRepository> businessObject)
+        public BaseApiController(IRepository<TModel, TViewModel> businessObject)
         {
             Repository = businessObject;
         }
