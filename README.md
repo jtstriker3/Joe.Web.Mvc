@@ -9,7 +9,9 @@ Create, Update and Delete
 
 ```
 //inherit from Joe.MapBack.MapBackDbContext becasue it implements IDbViewContext For you.
-public Context : Joe.MapBack.MapBackDbContext
+//This uses the EntityFramework MapBackContext which simply Extends DbContext and implements IDbViewContext
+//This can be found in the Joe.Map.EF Package
+public Context : Joe.Map.EntityFramework.MapBackDbContext
 {
   public DbSet<Person> People { get; set; }
   public DbSet<Job> Jobs { get; set; }
