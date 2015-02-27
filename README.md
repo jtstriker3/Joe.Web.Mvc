@@ -9,7 +9,9 @@ Create, Update and Delete
 
 ```
 //inherit from Joe.MapBack.MapBackDbContext becasue it implements IDbViewContext For you.
-public Context : Joe.MapBack.MapBackDbContext
+//This uses the EntityFramework MapBackContext which simply Extends DbContext and implements IDbViewContext
+//This can be found in the Joe.Map.EF Package
+public Context : Joe.Map.EntityFramework.MapBackDbContext
 {
   public DbSet<Person> People { get; set; }
   public DbSet<Job> Jobs { get; set; }
@@ -50,7 +52,7 @@ public class JobView
   public virtual IEnumerable<PersonView> People { get; set; }
 }
 
-public class PersonRepository<TViewModel, TContext> : Joe.Business.Repository<Person, TViewModel, TContext>
+public class PersonRepository<TViewModel> : Joe.Business.Repository<Person, TViewModel>
 {
 
 }
@@ -60,20 +62,20 @@ public class PersonRepository<TViewModel, TContext> : Joe.Business.Repository<Pe
 //Any Properties Specified in MVCOption will be built into a or Filter
 //In This Case your results would be where Name = Joe
 [MVCOptions("Name")]
-public class PersonController : Joe.Web.Mvc.RepositoryController<Person, PersonView, Context>
+public class PersonController : Joe.Web.Mvc.RepositoryController<Person, PersonView>
 {
   //Don't Forget to pass in the Repo To use
-  public PersonController() : base(new PersonRepository<PersonView, Context>())
+  public PersonController() : base(new PersonRepository<PersonView>())
   {
   
   }
 }
 
 //API Controller
-public class PersonController : Joe.Web.Mvc.BaseApiController<Person, PersonView, Context>
+public class PersonController : Joe.Web.Mvc.BaseApiController<Person, PersonView>
 {
   //Don't Forget to pass in the Repo To use
-  public PersonController() : base(new PersonRepository<PersonView, Context>())
+  public PersonController() : base(new PersonRepository<PersonView>())
   {
   
   }
@@ -85,29 +87,29 @@ public class PersonController : Joe.Web.Mvc.BaseApiController<Person, PersonView
 //you only have one class that implements ISecurityProvider
 //No need to manually Register it.
 public class SecurityProvider : Joe.Security.ISecurityProvider
+{
+  public Boolean IsUserInRole(params String[] roles)
+  {
+     foreach (var role in roles)
+        if (!String.IsNullOrEmpty(role))
+           if (Roles.IsUserInRole(role))
+              return true;
+
+    return false;
+  }
+
+  public String UserID
+  {
+     get
+     {
+        return Membership.GetUser().UserName;
+     }
+    set
     {
-        public Boolean IsUserInRole(params String[] roles)
-        {
-            foreach (var role in roles)
-                if (!String.IsNullOrEmpty(role))
-                    if (Roles.IsUserInRole(role))
-                        return true;
 
-            return false;
-        }
-
-        public String UserID
-        {
-            get
-            {
-                return Membership.GetUser().UserName;
-            }
-            set
-            {
-
-            }
-        }
     }
+  }
+}
 
 ```
 
