@@ -19,7 +19,7 @@ namespace Joe.Web.Mvc
         where TModel : class
         where TViewModel : class, new()
     {
-        protected MvcOptionsAttribute Options { get; set; }
+        internal MvcOptionsAttribute Options { get; set; }
         public IRepository<TModel, TViewModel> Repository { get; set; }
         public delegate TViewModel GetDelegate(TViewModel viewModel, params String[] ids);
         public delegate IQueryable<TViewModel> GetListDelegate(IQueryable<TViewModel> viewModelList);
@@ -416,7 +416,8 @@ namespace Joe.Web.Mvc
             }
         }
 
-        protected RepositoryController(Type repositoryType) : base()
+        protected RepositoryController(Type repositoryType)
+            : base()
         {
             _repositoryType = repositoryType;
         }
@@ -484,8 +485,10 @@ namespace Joe.Web.Mvc
         protected virtual RepositoryController<TModel, TView> CreateController<TView>(IRepository<TModel, TView> repository)
              where TView : class, new()
         {
+            var options = this.GetType().GetCustomAttribute<MvcOptionsAttribute>();
             var controller = new RepositoryControllerWrapper<TModel, TView>(repository);
             controller.ControllerContext = new ControllerContext(this.HttpContext, this.RouteData, this);
+            controller.Options = options;
             return controller;
         }
     }

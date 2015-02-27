@@ -13,7 +13,7 @@ namespace Joe.Web.Mvc.Controllers.Approval
     public abstract class ApprovalGroupController<TContext> : RepositoryController<Joe.Business.Approval.ApprovalGroup, ApprovalGroupView>
          where TContext : IDBViewContext, new()
     {
-        public ApprovalGroupController() : base(new ApprovalGroupRepository<TContext>()) { }
+        public ApprovalGroupController() : base(new ApprovalGroupRepository()) { }
     }
 
 }

@@ -11,8 +11,7 @@ using Joe.Initialize;
 
 namespace Joe.Web.Mvc.Controllers.Approval
 {
-    public abstract class ChangeController<TContext> : Controller
-        where TContext : IDBViewContext, new()
+    public abstract class ChangeController : Controller
     {
         protected Joe.Business.Approval.ApprovalProvider Provider { get; set; }
 

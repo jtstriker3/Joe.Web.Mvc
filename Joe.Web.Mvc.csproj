@@ -69,7 +69,7 @@
     </Reference>
     <Reference Include="Joe.Business, Version=3.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Business.3.1.0.3-alpha\lib\net45\Joe.Business.dll</HintPath>
+      <HintPath>packages\Joe.Business.3.1.0.5\lib\net45\Joe.Business.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Caching, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
