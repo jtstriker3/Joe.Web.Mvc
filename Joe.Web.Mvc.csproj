@@ -69,11 +69,11 @@
     </Reference>
     <Reference Include="Joe.Business, Version=3.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Business.3.1.0.5\lib\net45\Joe.Business.dll</HintPath>
+      <HintPath>packages\Joe.Business.3.1.0.6\lib\net45\Joe.Business.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Caching, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Caching.1.0.8\lib\net40\Joe.Caching.dll</HintPath>
+      <HintPath>packages\Joe.Caching.3.0.0.1\lib\net40\Joe.Caching.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Init, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -81,14 +81,15 @@
     </Reference>
     <Reference Include="Joe.Map, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Joe.Map.3.0.2\lib\net40\Joe.Map.dll</HintPath>
+      <HintPath>packages\Joe.Map.3.0.6\lib\net40\Joe.Map.dll</HintPath>
     </Reference>
     <Reference Include="Joe.Reflection, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>packages\Joe.Reflection.1.0.9\lib\net40\Joe.Reflection.dll</HintPath>
     </Reference>
-    <Reference Include="Joe.Security">
-      <HintPath>packages\Joe.Security.1.0.2.7\lib\net40\Joe.Security.dll</HintPath>
+    <Reference Include="Joe.Security, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>packages\Joe.Security.3.0.0.2\lib\net40\Joe.Security.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Data.Edm, Version=5.6.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">

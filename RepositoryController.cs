@@ -109,7 +109,7 @@ namespace Joe.Web.Mvc
                     ViewBag.Where = where;
                     if (ViewModelListRetrived != null)
                         viewModelList = ViewModelListRetrived(viewModelList);
-                    return Request.IsAjaxRequest() ? PartialView(viewModelList) : (ActionResult)this.View(viewModelList);
+                    return this.GetIndexResult(viewModelList);
                 }
             }
             catch (Exception ex)
@@ -270,7 +270,7 @@ namespace Joe.Web.Mvc
             this.Repository.Dispose();
         }
 
-        internal virtual String BuildIDRoute(TViewModel viewModel)
+        protected internal virtual String BuildIDRoute(TViewModel viewModel)
         {
             string route = String.Empty;
             var count = 0;
@@ -285,13 +285,13 @@ namespace Joe.Web.Mvc
             return route;
         }
 
-        internal virtual IEnumerable<String> Decode(params object[] ids)
+        protected internal virtual IEnumerable<String> Decode(params object[] ids)
         {
             foreach (var id in ids)
                 yield return Options.URLEncodeKey ? id.ToString().Decode() : id.ToString();
         }
 
-        internal virtual ActionResult CreateResult(TViewModel viewModel)
+        protected internal virtual ActionResult CreateResult(TViewModel viewModel)
         {
             if (this.Request.IsAjaxRequest())
             {
@@ -303,7 +303,7 @@ namespace Joe.Web.Mvc
             return this.RedirectToAction(Options.RedirectOnCreate ?? "Edit", Options.PassIDOnCreateRedirect ? new { ID = BuildIDRoute(viewModel), Success = true } : null);
         }
 
-        internal virtual ActionResult DeleteResult(TViewModel viewModel)
+        protected internal virtual ActionResult DeleteResult(TViewModel viewModel)
         {
             var filter = this.Request.QueryString["Filter"];
             if (filter.NotNull())
@@ -312,7 +312,7 @@ namespace Joe.Web.Mvc
             return this.RedirectToAction(Options.RedirectOnDelete ?? "Index");
         }
 
-        internal virtual ActionResult EditResult(TViewModel viewModel)
+        protected internal virtual ActionResult EditResult(TViewModel viewModel)
         {
             if (this.Request.IsAjaxRequest())
             {
@@ -326,12 +326,17 @@ namespace Joe.Web.Mvc
             return Request.IsAjaxRequest() ? PartialView(viewModel) : (ActionResult)this.View(viewModel);
         }
 
-        internal virtual ActionResult GetEditResult(TViewModel viewModel)
+        protected internal virtual ActionResult GetEditResult(TViewModel viewModel)
         {
             return Request.IsAjaxRequest() ? PartialView(viewModel) : (ActionResult)this.View(viewModel);
         }
 
-        internal virtual TViewModel InitCreateModel()
+        protected internal virtual ActionResult GetIndexResult(IEnumerable<TViewModel> viewModels)
+        {
+            return Request.IsAjaxRequest() ? PartialView(viewModels) : (ActionResult)this.View(viewModels);
+        }
+
+        protected internal virtual TViewModel InitCreateModel()
         {
             var viewModel = new TViewModel();
             SetValuesFromQueryString(viewModel);
@@ -342,7 +347,7 @@ namespace Joe.Web.Mvc
 
         }
 
-        internal void SetValuesFromQueryString(TViewModel viewModel)
+        protected internal void SetValuesFromQueryString(TViewModel viewModel)
         {
             var set = Convert.ToString(Request.QueryString["set"]);
             if (!String.IsNullOrEmpty(set))
@@ -363,7 +368,7 @@ namespace Joe.Web.Mvc
             }
         }
 
-        internal virtual Boolean TryGetModelOnError(out TViewModel viewModel, params Object[] ids)
+        protected internal virtual Boolean TryGetModelOnError(out TViewModel viewModel, params Object[] ids)
         {
             Boolean success = false;
             viewModel = null;
