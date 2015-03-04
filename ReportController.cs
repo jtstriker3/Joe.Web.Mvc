@@ -18,8 +18,7 @@ using DoddleReport.Configuration;
 
 namespace Joe.Web.Mvc
 {
-    public abstract class ReportController<TContext> : Controller
-        where TContext : IDBViewContext, new()
+    public abstract class ReportController : Controller
     {
         //
         // GET: /Report/
@@ -35,10 +34,10 @@ namespace Joe.Web.Mvc
             IReportRepository reportRepo = new ReportRepository();
             var report = reportRepo.GetReport(id);
             if (report.Single)
-                report.SingleChoices = reportRepo.GetSingleList<TContext>(report);
+                report.SingleChoices = reportRepo.GetSingleList(report);
             foreach (var filter in report.Filters)
                 if (filter.IsListFilter || filter.IsValueFilter)
-                    filter.ListValues = reportRepo.GetFilterValues<TContext>(filter);
+                    filter.ListValues = reportRepo.GetFilterValues(filter);
             return this.Request.IsAjaxRequest() ? PartialView(report) : (ActionResult)View(report);
         }
 
@@ -46,7 +45,7 @@ namespace Joe.Web.Mvc
         {
             IReportRepository reportRepo = new ReportRepository();
             IReport outReport;
-            var result = reportRepo.Run<TContext>(report, out outReport);
+            var result = reportRepo.Run(report, out outReport);
             report = (Joe.Business.Report.Report)outReport;
             var extension = this.Request.RequestContext.RouteData.Values["extension"];
             var reportFromView = reportRepo.GetReport(report.Name);
@@ -59,7 +58,7 @@ namespace Joe.Web.Mvc
             {
                 ViewBag.Title = report.Name;
                 ViewBag.Description = report.Description;
-                ViewBag.Filters = report.Filters.BuildFilterHeading<TContext>(reportRepo, true);
+                ViewBag.Filters = report.Filters.BuildFilterHeading(reportRepo, true);
                 if (typeof(IEnumerable).IsAssignableFrom(result.GetType()))
                 {
                     var ienumerableResult = (IEnumerable)result;
@@ -151,7 +150,7 @@ namespace Joe.Web.Mvc
 
                 }
 
-                doddleReport.TextFields.Header += Environment.NewLine + (isNotHtml ? "Filters" + Environment.NewLine : "<b>Filters</b><br/>") + report.Filters.BuildFilterHeading<TContext>(reportRepo);
+                doddleReport.TextFields.Header += Environment.NewLine + (isNotHtml ? "Filters" + Environment.NewLine : "<b>Filters</b><br/>") + report.Filters.BuildFilterHeading(reportRepo);
                 if (reportFromView.Filters.NotNull())
                     foreach (var filter in reportFromView.Filters)
                     {
@@ -182,7 +181,7 @@ namespace Joe.Web.Mvc
             var renderFunction = "renderReport" + report.Name.Replace(" ", String.Empty);
             ViewBag.RenderFunction = renderFunction;
             var chartTypeStr = this.Request.QueryString["ChartType"];
-            ViewBag.Filters = report.Filters.BuildFilterHeading<TContext>(repo, true);
+            ViewBag.Filters = report.Filters.BuildFilterHeading(repo, true);
             if (typeof(IEnumerable).IsAssignableFrom(result.GetType()))
             {
 

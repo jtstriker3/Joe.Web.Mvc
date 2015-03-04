@@ -19,7 +19,7 @@ namespace Joe.Web.Mvc
         where TModel : class
         where TViewModel : class, new()
     {
-        internal MvcOptionsAttribute Options { get; set; }
+        protected internal MvcOptionsAttribute Options { get; set; }
         public IRepository<TModel, TViewModel> Repository { get; set; }
         public delegate TViewModel GetDelegate(TViewModel viewModel, params String[] ids);
         public delegate IQueryable<TViewModel> GetListDelegate(IQueryable<TViewModel> viewModelList);
@@ -83,7 +83,7 @@ namespace Joe.Web.Mvc
             return Index(null, filterString: filterString);
         }
 
-        internal virtual ActionResult Index(Expression<Func<TViewModel, Boolean>> filter, Object dynamicFilters = null, String filterString = null)
+        protected internal virtual ActionResult Index(Expression<Func<TViewModel, Boolean>> filter, Object dynamicFilters = null, String filterString = null)
         {
             try
             {

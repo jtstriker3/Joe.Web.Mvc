@@ -213,8 +213,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
             return ids;
         }
 
-        public static String BuildFilterHeading<TRepository>(this IEnumerable<IReportFilter> filters, IReportRepository repository, bool html = false)
-             where TRepository : IDBViewContext, new()
+        public static String BuildFilterHeading(this IEnumerable<IReportFilter> filters, IReportRepository repository, bool html = false)
         {
             if (filters.NotNull())
             {
@@ -229,22 +228,22 @@ namespace Joe.Web.Mvc.Utility.Extensions
                             var div = new TagBuilder("div");
                             var strong = new TagBuilder("strong");
                             strong.InnerHtml = display + ": ";
-                            div.InnerHtml = strong.ToString() + (filter.ListView != null && filter.Value != null && filter.GetDisplayFromContext ? repository.GetFilterDisplay<TRepository>(filter) : filter.Value);
+                            div.InnerHtml = strong.ToString() + (filter.ListView != null && filter.Value != null && filter.GetDisplayFromContext ? repository.GetFilterDisplay(filter) : filter.Value);
                             filterHeader += div.ToString();
                         }
                         else
-                            filterHeader = display + ": " + (filter.ListView != null && filter.Value != null && filter.GetDisplayFromContext ? repository.GetFilterDisplay<TRepository>(filter) : filter.Value);
+                            filterHeader = display + ": " + (filter.ListView != null && filter.Value != null && filter.GetDisplayFromContext ? repository.GetFilterDisplay(filter) : filter.Value);
                     else
                         if (html)
                         {
                             var div = new TagBuilder("div");
                             var strong = new TagBuilder("strong");
                             strong.InnerHtml = display + ": ";
-                            div.InnerHtml = strong.ToString() + (filter.ListView != null && filter.Value != null && filter.GetDisplayFromContext ? repository.GetFilterDisplay<TRepository>(filter) : filter.Value);
+                            div.InnerHtml = strong.ToString() + (filter.ListView != null && filter.Value != null && filter.GetDisplayFromContext ? repository.GetFilterDisplay(filter) : filter.Value);
                             filterHeader += div.ToString();
                         }
                         else
-                            filterHeader += Environment.NewLine + display + ": " + (filter.ListView != null && filter.Value != null && filter.GetDisplayFromContext ? repository.GetFilterDisplay<TRepository>(filter) : filter.Value);
+                            filterHeader += Environment.NewLine + display + ": " + (filter.ListView != null && filter.Value != null && filter.GetDisplayFromContext ? repository.GetFilterDisplay(filter) : filter.Value);
                 }
 
                 return filterHeader;

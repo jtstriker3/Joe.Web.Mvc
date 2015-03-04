@@ -10,8 +10,7 @@ using Joe.MapBack;
 namespace Joe.Web.Mvc.Controllers.Approval
 {
 
-    public abstract class ApprovalGroupController<TContext> : RepositoryController<Joe.Business.Approval.ApprovalGroup, ApprovalGroupView>
-         where TContext : IDBViewContext, new()
+    public abstract class ApprovalGroupController : RepositoryController<Joe.Business.Approval.ApprovalGroup, ApprovalGroupView>
     {
         public ApprovalGroupController() : base(new ApprovalGroupRepository()) { }
     }
