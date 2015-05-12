@@ -456,7 +456,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
             var placeholder = filter.DisplayAttribute != null ? filter.DisplayAttribute.Name : filter.PropertyName;
             String returnString;
             if (!filter.IsListFilter && !filter.IsValueFilter)
-                if (typeof(DateTime).IsAssignableFrom(filter.FilterType))
+                if (typeof(DateTime).IsAssignableFrom(filter.FilterType) || typeof(DateTime?).IsAssignableFrom(filter.FilterType))
                 {
                     Object attributes;
 
@@ -481,8 +481,45 @@ namespace Joe.Web.Mvc.Utility.Extensions
                     else
                         attributes = new { @class = "chosen form-control", placeholder = placeholder, data_placeholder = placeholder, data_val = "true", data_val_required = String.Format("The {0} field is required.", placeholder) };
 
-                    returnString = html.DropDownListFor(model => model.Value, filter.FilterType.ToSelectList(), String.Empty,
+                    returnString = html.DropDownListFor(model => model.Value,
+                        filter.FilterType.ToSelectList(),
+                        String.Empty,
                         attributes).ToString();
+                }
+                else if (filter.FilterType.ImplementsIEnumerable())
+                {
+                    var genericType = filter.FilterType.GetGenericArguments().FirstOrDefault();
+
+                    if (genericType == null)
+                        throw new Exception("IEnumerbale Filter Types must be generic");
+
+                    if (genericType.IsEnum)
+                    {
+                        Object attributes;
+                        if (filter.IsOptional())
+                            attributes = new { @class = "chosen form-control", placeholder = placeholder, data_placeholder = placeholder };
+                        else
+                            attributes = new { @class = "chosen form-control", placeholder = placeholder, data_placeholder = placeholder, data_val = "true", data_val_required = String.Format("The {0} field is required.", placeholder) };
+
+                        returnString = html.ListBoxFor(model => model.IEnumerableValue,
+                            genericType.ToSelectList(),
+                            attributes).ToString();
+                    }
+                    else
+                    {
+                        Object attributes;
+                        if (filter.IsOptional())
+                            attributes = new { @class = "chosen form-control", placeholder = placeholder, data_placeholder = placeholder };
+                        else
+                            attributes = new { @class = "chosen form-control", placeholder = placeholder, data_placeholder = placeholder, data_val = "true", data_val_required = String.Format("The {0} field is required.", placeholder) };
+
+                        returnString = html.ListBoxFor(model => model.IEnumerableValue,
+                            filter.ListValues.Cast<Object>().ToSelectList(item => filter.ValueProperty.NotNull()
+                                ? Joe.Reflection.ReflectionHelper.GetEvalProperty(item, filter.ValueProperty) : item.GetIDs().BuildIDList(),
+                            item => item.ConcatDisplayProperties(filter.DisplayProperties), filter.Value),
+                            attributes)
+                            .ToString();
+                    }
                 }
                 else
                 {
@@ -501,10 +538,13 @@ namespace Joe.Web.Mvc.Utility.Extensions
                 else
                     attributes = new { @class = "chosen form-control", placeholder = placeholder, data_placeholder = placeholder, data_val = "true", data_val_required = String.Format("The {0} field is required.", placeholder) };
 
-                returnString = html.DropDownListFor(model => model.Value, filter.ListValues.Cast<Object>().ToSelectList(
-                    item => filter.ValueProperty.NotNull() ? Joe.Reflection.ReflectionHelper.GetEvalProperty(item, filter.ValueProperty) : item.GetIDs().BuildIDList(),
-                    item => item.ConcatDisplayProperties(filter.DisplayProperties), null), String.Empty,
-                    attributes).ToString();
+                returnString = html.DropDownListFor(model => model.Value,
+                    filter.ListValues.Cast<Object>().ToSelectList(item => filter.ValueProperty.NotNull()
+                        ? Joe.Reflection.ReflectionHelper.GetEvalProperty(item, filter.ValueProperty) : item.GetIDs().BuildIDList(),
+                    item => item.ConcatDisplayProperties(filter.DisplayProperties), filter.Value),
+                    String.Empty,
+                    attributes)
+                    .ToString();
             }
 
             if (!filter.IsOptional())

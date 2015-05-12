@@ -15,6 +15,9 @@ using DotNet.Highcharts.Options;
 using DotNet.Highcharts.Helpers;
 using DotNet.Highcharts.Enums;
 using DoddleReport.Configuration;
+using DoddleReport.ReportSources;
+using Joe.Web.Mvc.Extensions.DoddleReport;
+using System.Dynamic;
 
 namespace Joe.Web.Mvc
 {
@@ -38,6 +41,8 @@ namespace Joe.Web.Mvc
             foreach (var filter in report.Filters)
                 if (filter.IsListFilter || filter.IsValueFilter)
                     filter.ListValues = reportRepo.GetFilterValues(filter);
+
+            SetFilterDefaults(report.Filters);
             return this.Request.IsAjaxRequest() ? PartialView(report) : (ActionResult)View(report);
         }
 
@@ -97,8 +102,10 @@ namespace Joe.Web.Mvc
                     if (!isNotHtml && (!report.Filters.NotNull() || report.Filters.Count() == 0))
                         doddleReport.TextFields.Header = "&nbsp;";
 
-
-                    doddleReport.Source = ienumerableResult.ToReportSource();
+                    if (this.IsDyanmic(ienumerableResult))
+                        doddleReport.Source = ienumerableResult.ToDynamicReportSource();
+                    else
+                        doddleReport.Source = ienumerableResult.ToReportSource();
 
                     if (ienumerableResult.GetType().ImplementsIEnumerable())
                     {
@@ -118,13 +125,17 @@ namespace Joe.Web.Mvc
                 }
                 else
                 {
-                    var hasIenumerableProperty = result.GetType().GetProperties().Where(prop => prop.PropertyType.ImplementsIEnumerable()).Count() > 0;
+                    var hasIenumerableProperty = result.GetType().GetProperties().Any(prop => prop.PropertyType.ImplementsIEnumerable());
                     var reportList = result.UnionAllList();
                     if (!hasIenumerableProperty)
                         reportList = new List<Object>() { result };
 
                     doddleReport.TextFields.Header = result.BuildReportHeading(report.Filters);
-                    doddleReport.Source = reportList.ToReportSource();
+
+                    if (this.IsDyanmic(reportList))
+                        doddleReport.Source = reportList.ToDynamicReportSource();
+                    else
+                        doddleReport.Source = reportList.ToReportSource();
 
                     if (reportList.Count() > 0)
                     {
@@ -189,11 +200,11 @@ namespace Joe.Web.Mvc
                 {
                     var iChartPoints = ((IEnumerable)result).Cast<IChartPoint>();
                     iChartPoints = iChartPoints.AddSeries();
-                    var seriesData = iChartPoints.GroupBy(g => g.Series).Select(group => new Series
+                    var seriesData = iChartPoints.GroupBy(g => g.Series).OrderBy(g => g.Key).Select(group => new Series
                     {
                         Name = group.Key.ToString(),
                         Data = new Data(group.To2DimensionalArray()),
-                    }).ToArray();
+                    }).ToList();
 
                     DotNet.Highcharts.Highcharts chart = new DotNet.Highcharts.Highcharts("chart")
                                                                 .InitChart(new Chart()
@@ -202,7 +213,6 @@ namespace Joe.Web.Mvc
                                                                     ClassName = "chart",
                                                                     Height = report.Height
                                                                 })
-                                                               .SetSeries(seriesData)
                                                                .SetTitle(new Title() { Text = report.Name });
                     var xAxis = GetXAxis(iChartPoints);
                     chart.SetXAxis(new XAxis()
@@ -216,15 +226,21 @@ namespace Joe.Web.Mvc
                     });
 
                     if (report.YAxisPlotLines != null)
+                    {
+                        var plotLines = this.GetYAxisPlotLines(report);
                         chart.SetYAxis(new YAxis
-                        {
-                            PlotLines = this.GetYAxisPlotLines(report),
-                            Title = new YAxisTitle()
-                                   {
-                                       Text = report.YAxisText
-                                   }
-                        });
+                         {
+                             PlotLines = plotLines,
+                             Title = new YAxisTitle()
+                                    {
+                                        Text = report.YAxisText
+                                    }
+                         });
+
+                        AddPlotSeries(seriesData, plotLines);
+                    }
                     else if (report.YAxisText != null)
+                    {
                         chart.SetYAxis(new YAxis
                         {
                             Title = new YAxisTitle()
@@ -232,7 +248,9 @@ namespace Joe.Web.Mvc
                                 Text = report.YAxisText
                             }
                         });
+                    }
 
+                    chart.SetSeries(seriesData.ToArray());
                     this.AddChartLabels(chart, report);
                     chart.InFunction(renderFunction);
 
@@ -253,6 +271,15 @@ namespace Joe.Web.Mvc
                         else
                             xAxis = GetXAxis(resultEnumerable.SelectMany(series => series.Data.Cast<IPoint>()).Cast<IPoint>());
 
+                        var seriesData = resultEnumerable.Select(point =>
+                                        new Series()
+                                        {
+                                            Name = point.Series.ToString(),
+                                            Data = new Data(
+                                                ((IEnumerable)point.Data).Cast<IPoint>().GroupBy(reportGrouping => reportGrouping.X)
+                                                .Select(g => new ChartPoint() { Y = g.Sum(p => p.Y.ToDouble()), X = g.Key }).ToDictionary(cp => cp.X.ToString()).AddZeroDataPoints(xAxis))
+                                        }).OrderBy(s => s.Name).ToList();
+
                         if (xAxis.Count() > 0)
                         {
                             //xAxis.Sort();
@@ -269,16 +296,23 @@ namespace Joe.Web.Mvc
 
 
                         if (firstResult.YAxis.NotNull())
+                        {
+                            var plotLines = this.GetYAxisPlotLines(report);
                             chart.SetYAxis(new YAxis
-                            {
-                                Categories = firstResult.YAxis.ToArray(),
-                                PlotLines = this.GetYAxisPlotLines(report),
-                                Title = new YAxisTitle()
-                                {
-                                    Text = report.YAxisText
-                                }
-                            });
+                               {
+                                   Categories = firstResult.YAxis.ToArray(),
+                                   PlotLines = plotLines,
+                                   Title = new YAxisTitle()
+                                   {
+                                       Text = report.YAxisText
+                                   }
+                               });
+
+                            AddPlotSeries(seriesData, plotLines);
+                        }
                         else if (report.YAxisPlotLines != null)
+                        {
+                            var plotLines = this.GetYAxisPlotLines(report);
                             chart.SetYAxis(new YAxis
                             {
                                 PlotLines = this.GetYAxisPlotLines(report),
@@ -287,6 +321,9 @@ namespace Joe.Web.Mvc
                                     Text = report.YAxisText
                                 }
                             });
+
+                            AddPlotSeries(seriesData, plotLines);
+                        }
                         else if (report.YAxisText != null)
                             chart.SetYAxis(new YAxis
                             {
@@ -296,15 +333,6 @@ namespace Joe.Web.Mvc
                                 }
                             });
 
-                        var seriesData = resultEnumerable.Select(point =>
-                                         new Series()
-                                         {
-                                             Name = point.Series.ToString(),
-                                             Data = new Data(
-                                                 ((IEnumerable)point.Data).Cast<IPoint>().GroupBy(reportGrouping => reportGrouping.X)
-                                                 .Select(g => new ChartPoint() { Y = g.Sum(p => p.Y.ToDouble()), X = g.Key }).ToDictionary(cp => cp.X.ToString()).AddZeroDataPoints(xAxis))
-                                         }).ToArray();
-
 
                         chart.InitChart(new Chart()
                         {
@@ -312,7 +340,7 @@ namespace Joe.Web.Mvc
                             ClassName = "chart",
                             Height = report.Height
                         })
-                       .SetSeries(seriesData)
+                       .SetSeries(seriesData.ToArray())
                        .SetTitle(new Title() { Text = report.Name });
                         this.AddChartLabels(chart, report);
                         chart.InFunction(renderFunction);
@@ -356,25 +384,45 @@ namespace Joe.Web.Mvc
                         });
                     }
 
+                    var series = new Series()
+                    {
+                        Name = IChartReportResult.Series.ToString(),
+                        Data = new Data(
+                            ((IEnumerable)IChartReportResult.Data).Cast<IPoint>().GroupBy(reportGrouping => reportGrouping.X)
+                            .Select(g => new ChartPoint() { Y = g.ToList().Sum(p => p.Y.ToDouble()), X = g.Key.ToString() }).ToDictionary(cp => cp.X.ToString()).AddZeroDataPoints(xAxis))
+                    };
+
+                    var seriesData = new List<Series>() { series };
+
                     if (IChartReportResult.YAxis.NotNull())
+                    {
+                        var plotLines = this.GetYAxisPlotLines(report);
                         chart.SetYAxis(new YAxis
                         {
                             Categories = IChartReportResult.YAxis.ToArray(),
-                            PlotLines = this.GetYAxisPlotLines(report),
+                            PlotLines = plotLines,
                             Title = new YAxisTitle()
                             {
                                 Text = report.YAxisText
                             }
                         });
+
+                        AddPlotSeries(seriesData, plotLines);
+                    }
                     else if (report.YAxisPlotLines != null)
+                    {
+                        var plotLines = this.GetYAxisPlotLines(report);
                         chart.SetYAxis(new YAxis
-                        {
-                            PlotLines = this.GetYAxisPlotLines(report),
-                            Title = new YAxisTitle()
-                                   {
-                                       Text = report.YAxisText
-                                   }
-                        });
+                         {
+                             PlotLines = plotLines,
+                             Title = new YAxisTitle()
+                                    {
+                                        Text = report.YAxisText
+                                    }
+                         });
+
+                        AddPlotSeries(seriesData, plotLines);
+                    }
                     else if (report.YAxisText != null)
                         chart.SetYAxis(new YAxis
                         {
@@ -384,14 +432,7 @@ namespace Joe.Web.Mvc
                             }
                         });
 
-                    var series = new Series()
-                    {
-                        Name = IChartReportResult.Series.ToString(),
-                        Data = new Data(
-                            ((IEnumerable)IChartReportResult.Data).Cast<IPoint>().GroupBy(reportGrouping => reportGrouping.X)
-                            .Select(g => new ChartPoint() { Y = g.ToList().Sum(p => p.Y.ToDouble()), X = g.Key.ToString() }).ToDictionary(cp => cp.X.ToString()).AddZeroDataPoints(xAxis))
-                    };
-                    chart.SetSeries(series);
+                    chart.SetSeries(seriesData.ToArray());
                     chart.SetTitle(new Title() { Text = report.Name });
 
                     this.AddChartLabels(chart, report);
@@ -402,6 +443,21 @@ namespace Joe.Web.Mvc
 
                 return this.Request.IsAjaxRequest() ? PartialView("Chart") : (ActionResult)View("Chart");
             }
+        }
+
+        private static void AddPlotSeries(List<Series> seriesData, YAxisPlotLines[] plotLines)
+        {
+            var plotSeries = new Series()
+            {
+                Name = "Plot",
+                Data = new Data(plotLines.Select(pl => new Point() { Y = pl.Value }).ToArray()),
+                Type = DotNet.Highcharts.Enums.ChartTypes.Scatter,
+                LegendIndex = 999,
+                Color = plotLines.FirstOrDefault().Color,
+                ZIndex = -1
+            };
+
+            seriesData.Add(plotSeries);
         }
 
         private IEnumerable<String> GetXAxis(IEnumerable<IPoint> iChartPoints)
@@ -535,6 +591,7 @@ namespace Joe.Web.Mvc
                     newLine.Width = plotLine.Width;
                     newLine.Color = System.Drawing.ColorTranslator.FromHtml(plotLine.Color);
                     newLine.DashStyle = (DashStyles)((int)plotLine.DashStyle);
+                    newLine.ZIndex = 999;
                     newLine.Label = new YAxisPlotLinesLabel()
                     {
                         X = plotLine.Label.X,
@@ -559,6 +616,24 @@ namespace Joe.Web.Mvc
                 return DoddleReport.Configuration.Config.Report.Writers.Cast<WriterElement>().SingleOrDefault(e => e.Format.ToLower() == reportType.ToLower());
 
             return null;
+        }
+
+        private void SetFilterDefaults(IEnumerable<ReportFilter> filters)
+        {
+            foreach (var filter in filters)
+            {
+                var defaultValue = this.Request.QueryString[filter.PropertyName];
+                filter.Value = defaultValue;
+            }
+        }
+
+        private bool IsDyanmic(IEnumerable list)
+        {
+            var listType = list.GetType();
+            if (listType.IsGenericType)
+                return typeof(ExpandoObject).IsAssignableFrom(listType.GetGenericArguments().FirstOrDefault());
+
+            return false;
         }
     }
 
