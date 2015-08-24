@@ -190,6 +190,7 @@ namespace Joe.Web.Mvc
         {
             try
             {
+                ViewBag.Success = false;
                 var decodedIds = this.Decode(id).Single().Split('/');
                 var viewModel = this.Repository.Get(decodedIds);
                 if (ViewModelRetrieved != null)

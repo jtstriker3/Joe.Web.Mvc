@@ -15,7 +15,7 @@ namespace Joe.Web.Mvc
 {
     [ErrorActionFilter]
     public abstract class BaseApiController<TModel, TViewModel> : ApiController, IBusinessController
-        where TModel : class, new()
+        where TModel : class
         where TViewModel : class, new()
     {
         protected IRepository<TModel, TViewModel> Repository { get; set; }
