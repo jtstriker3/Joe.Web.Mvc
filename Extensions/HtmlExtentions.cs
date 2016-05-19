@@ -869,6 +869,12 @@ namespace Joe.Web.Mvc.Utility.Extensions
                         header.Attributes.Add("data-placeholder", headerText);
                         header.Attributes.Add("data-property-type", property.PropertyType.Name);
                     }
+                    else if(property.PropertyType.ImplementsIEnumerable() && property.PropertyType.GetGenericArguments().FirstOrDefault().IsSimpleType())
+                    {
+                        header.Attributes.Add("data-property", property.Name);
+                        header.Attributes.Add("data-placeholder", headerText);
+                        header.Attributes.Add("data-property-type", "IEnumerable");
+                    }
                     //If Class check to see if it has a display column and use that to filter by else do not Filter
                     else
                     {
@@ -962,8 +968,10 @@ namespace Joe.Web.Mvc.Utility.Extensions
                         var editHref = UrlHelper.GenerateContentUrl("~/" + area + controllerName + "/edit/" + item.GetIDs().ToRoute().Encode(), html.ViewContext.HttpContext);
                         var editLink = new TagBuilder("a");
                         editLink.Attributes.Add("href", quickEditHref);
+                        editLink.AddCssClass("btn btn-xs btn-default");
                         var fullEdit = new TagBuilder("a");
                         fullEdit.Attributes.Add("href", editHref);
+                        fullEdit.AddCssClass("btn btn-xs btn-default");
                         if (isAjax)
                         {
                             //editLink.Attributes.Add("data-ajax", "true");
@@ -979,6 +987,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
                         var deleteLink = new TagBuilder("a");
                         deleteLink.Attributes.Add("data-delete", "true");
                         deleteLink.Attributes.Add("href", UrlHelper.GenerateContentUrl("~/" + area + controllerName + "/delete/" + item.GetIDs().ToRoute().Encode() + (isAjax ? "?UpdateTargetId=" + id : String.Empty) + (filterColumns.Count() > 0 ? "&filter=" + BuildFilterColumnsQueryString(filterColumns) : String.Empty), html.ViewContext.HttpContext));
+                        deleteLink.AddCssClass("btn btn-xs btn-default");
                         deleteLink.InnerHtml = "Delete".GetGlobalResource();
                         if (isAjax)
                         {
@@ -990,6 +999,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
                         var printHref = UrlHelper.GenerateContentUrl("~/" + area + controllerName + "/details/" + item.GetIDs().ToRoute().Encode() + (filterColumns.Count() > 0 ? "&filter=" + BuildFilterColumnsQueryString(filterColumns) : String.Empty), html.ViewContext.HttpContext);
                         printView.InnerHtml += "Details".GetGlobalResource();
                         printView.Attributes.Add("href", printHref);
+                        printView.AddCssClass("btn btn-xs btn-default");
 
                         var pullLeftSpan = new TagBuilder("span");
                         pullLeftSpan.AddCssClass("pull-right");

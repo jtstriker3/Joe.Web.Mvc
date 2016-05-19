@@ -306,8 +306,12 @@ namespace Joe.Web.Mvc
 
         protected internal virtual ActionResult DeleteResult(TViewModel viewModel)
         {
-            var filter = this.Request.QueryString["Filter"];
-            if (filter.NotNull())
+            var filter = this.Request.QueryString["filter"];
+            var where = this.Request.QueryString["where"];
+
+            if(where.NotNull())
+                return this.RedirectToAction(Options.RedirectOnDelete ?? "Index", new { where = where });
+            else if (filter.NotNull())
                 return this.RedirectToAction(Options.RedirectOnDelete ?? "Index", new { where = HelperExtentions.BuildFilterString(filter, viewModel), filter = filter });
 
             return this.RedirectToAction(Options.RedirectOnDelete ?? "Index");
