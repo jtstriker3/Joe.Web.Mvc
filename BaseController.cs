@@ -195,7 +195,15 @@ namespace Joe.Web.Mvc
 
         protected ActionResult Error(Exception ex, MvcOptionsAttribute options = null, Object viewModel = null)
         {
-            return Request.IsAjaxRequest() ? GetAjaxErrorResponse(ex, options, viewModel) : GetErrorResponse(ex, options, viewModel);
+            try
+            {
+                LogError(ex);
+                return Request.IsAjaxRequest() ? GetAjaxErrorResponse(ex, options, viewModel) : GetErrorResponse(ex, options, viewModel);
+            }
+            catch
+            {
+                throw ex;
+            }
         }
 
         protected virtual void AddWarningsToModelState(IEnumerable<ValidationWarning> warnings)

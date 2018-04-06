@@ -428,20 +428,23 @@ namespace Joe.Web.Mvc.Utility.Extensions
             return RadioButonListFor(html, expression, radioButtonList, null);
         }
 
-        public static MvcHtmlString RadioButonListFor<TModel, TProperty>(this HtmlHelper<TModel> html, Expression<Func<TModel, TProperty>> expression, IDictionary<String, String> radioButtonList, Object htmlAttributes)
+        public static MvcHtmlString RadioButonListFor<TModel, TProperty>(this HtmlHelper<TModel> html, Expression<Func<TModel, TProperty>> expression, IDictionary<String, String> radioButtonList, Object labelAttributes = null, Object inputAttributes = null)
         {
-
-            return RadioButonListFor(html, expression, radioButtonList, new RouteValueDictionary(htmlAttributes));
+                return RadioButonListFor(html, expression, radioButtonList, new RouteValueDictionary(labelAttributes), new RouteValueDictionary(inputAttributes));
         }
 
-        public static MvcHtmlString RadioButonListFor<TModel, TProperty>(this HtmlHelper<TModel> html, Expression<Func<TModel, TProperty>> expression, IDictionary<String, String> radioButtonList, IDictionary<String, Object> htmlAttributes)
+        public static MvcHtmlString RadioButonListFor<TModel, TProperty>(this HtmlHelper<TModel> html, Expression<Func<TModel, TProperty>> expression, IDictionary<String, String> radioButtonList, IDictionary<String, Object> labelAttributes, IDictionary<String, Object> inputAttributes)
         {
             StringBuilder returnList = new StringBuilder();
             foreach (KeyValuePair<String, String> item in radioButtonList)
             {
                 TagBuilder container = new TagBuilder("label");
-                container.MergeAttributes(htmlAttributes);
-                container.InnerHtml += html.RadioButtonFor<TModel, TProperty>(expression, item.Value) + item.Key;
+
+                labelAttributes.CleanDataAttributes();
+                inputAttributes.CleanDataAttributes();
+
+                container.MergeAttributes(labelAttributes);
+                container.InnerHtml += html.RadioButtonFor<TModel, TProperty>(expression, item.Value, inputAttributes) + item.Key;
                 returnList.Append(container.ToString());
             }
 
@@ -669,6 +672,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
             Boolean showDetails = false,
             int? pageSize = null,
             Action<TagBuilder, TValue> setRowAttributes = null,
+            string dateFormat = null,
            params String[] keyProperties)
         {
 
@@ -682,7 +686,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
 
             if (!html.ViewContext.HttpContext.Request.IsAjaxRequest())
             {
-                container.InnerHtml = items.Table(html, tableAttributes, tableID, controllerName, true, false, showDetails, true, true, setRowAttributes, columns, pageSize, keyProperties).ToString();
+                container.InnerHtml = items.Table(html, tableAttributes, tableID, controllerName, true, false, showDetails, true, true, setRowAttributes, columns, pageSize, dateFormat, keyProperties).ToString();
 
 
                 var modalContainerID = Guid.NewGuid().ToString().Replace("-", String.Empty);
@@ -715,7 +719,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
                 return new MvcHtmlString(container.ToString());
             }
             else
-                return items.Table(html, tableAttributes, tableID, controllerName, true, false, showDetails, true, true, setRowAttributes, columns, pageSize, keyProperties);
+                return items.Table(html, tableAttributes, tableID, controllerName, true, false, showDetails, true, true, setRowAttributes, columns, pageSize, dateFormat, keyProperties);
 
         }
 
@@ -733,10 +737,11 @@ namespace Joe.Web.Mvc.Utility.Extensions
             Action<TagBuilder, TValue> setRowAttributes = null,
             IEnumerable<String> columns = null,
             int? pageSize = null,
+            string dateFormat = null,
             params String[] filterColumns)
         {
             var items = propertyExpression.Compile().Invoke(html.ViewData.Model);
-            return items.Table(html, tableAttributes, id ?? html.ViewContext.HttpContext.Request.QueryString["UpdateTargetId"], controllerName, isAjax, readOnly, showDetails, page, sortable, setRowAttributes, columns, pageSize, filterColumns);
+            return items.Table(html, tableAttributes, id ?? html.ViewContext.HttpContext.Request.QueryString["UpdateTargetId"], controllerName, isAjax, readOnly, showDetails, page, sortable, setRowAttributes, columns, pageSize, dateFormat, filterColumns);
         }
 
         public static MvcHtmlString Table<TModel, TValue>(this IEnumerable<TValue> items,
@@ -752,6 +757,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
             Action<TagBuilder, TValue> setRowAttributes = null,
             IEnumerable<String> columns = null,
             int? pageSize = null,
+            string dateFormat = null,
             params String[] filterColumns)
         {
             var isAdmin = html.ViewContext.HttpContext.User.IsInRole(Configuration.ConfigurationHelper.AdminRole);
@@ -869,7 +875,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
                         header.Attributes.Add("data-placeholder", headerText);
                         header.Attributes.Add("data-property-type", property.PropertyType.Name);
                     }
-                    else if(property.PropertyType.ImplementsIEnumerable() && property.PropertyType.GetGenericArguments().FirstOrDefault().IsSimpleType())
+                    else if (property.PropertyType.ImplementsIEnumerable() && property.PropertyType.GetGenericArguments().FirstOrDefault().IsSimpleType())
                     {
                         header.Attributes.Add("data-property", property.Name);
                         header.Attributes.Add("data-placeholder", headerText);
@@ -938,7 +944,7 @@ namespace Joe.Web.Mvc.Utility.Extensions
                             var value = property.GetValue(item, null);
                             if (value != null)
                                 if (value is DateTime)
-                                    cell.InnerHtml = ((DateTime)value).ToShortDateString();
+                                    cell.InnerHtml = string.IsNullOrWhiteSpace(dateFormat) ? ((DateTime)value).ToShortDateString() : ((DateTime)value).ToString(dateFormat);
                                 else if (typeof(IEnumerable<String>).IsAssignableFrom(property.PropertyType))
                                     cell.InnerHtml = ((IEnumerable<String>)value).ToCommaDelimitatedList();
                                 else if (typeof(IEnumerable<int>).IsAssignableFrom(property.PropertyType))
