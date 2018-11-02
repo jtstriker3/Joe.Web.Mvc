@@ -64,6 +64,7 @@ namespace Joe.Web.Mvc
                 ViewBag.Title = report.Name;
                 ViewBag.Description = report.Description;
                 ViewBag.Filters = report.Filters.BuildFilterHeading(reportRepo, true);
+                var embed = Convert.ToBoolean(Request.QueryString["embed"]);
                 if (typeof(IEnumerable).IsAssignableFrom(result.GetType()))
                 {
                     var ienumerableResult = (IEnumerable)result;
@@ -71,10 +72,10 @@ namespace Joe.Web.Mvc
                     if (where.NotNull())
                         ienumerableResult = ienumerableResult.Filter(where);
 
-                    return View(report.UiHint, ienumerableResult);
+                    return embed ? PartialView(report.UiHint, ienumerableResult) : (ActionResult)View(report.UiHint, ienumerableResult);
                 }
 
-                return View(report.UiHint, result);
+                return embed ? PartialView(report.UiHint, result) : (ActionResult)View(report.UiHint, result);
             }
             else
             {
